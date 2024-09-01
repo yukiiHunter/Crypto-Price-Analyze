@@ -22,7 +22,7 @@ def calculate_price_change(df):
     return df
 
 def calculate_direction_comparison(avg_changes_df, intervals):
-    direction_comparison = {interval: {'Same Direction': 0, 'Opposite Direction': 0, 'Symbols': {}} for interval in intervals}
+    direction_comparison = {interval: {'Same Direction': 0, 'Opposite Direction': 0, 'Symbols': []} for interval in intervals}
 
     for interval in intervals:
         interval_data = avg_changes_df[avg_changes_df['Interval'] == interval]
@@ -33,11 +33,18 @@ def calculate_direction_comparison(avg_changes_df, intervals):
             direction_comparison[interval]['Same Direction'] = (same_direction_count / len(interval_data)) * 100
             direction_comparison[interval]['Opposite Direction'] = (opposite_direction_count / len(interval_data)) * 100
 
-            # Collect symbols for opposite direction
-            symbols_negative = interval_data[interval_data['Average Change (%)'] <= 0]['Symbol'].tolist()
-            direction_comparison[interval]['Symbols'] = symbols_negative
+            # Determine whether to collect symbols from Same or Opposite Direction
+            if direction_comparison[interval]['Opposite Direction'] < 50:
+                # Collect symbols where Average Change (%) is positive
+                symbols_to_collect = interval_data[interval_data['Average Change (%)'] <= 0]['Symbol'].tolist()
+            else:
+                # Collect symbols where Average Change (%) is negative
+                symbols_to_collect = interval_data[interval_data['Average Change (%)'] >= 0]['Symbol'].tolist()
+                
+            direction_comparison[interval]['Symbols'] = symbols_to_collect
 
     return direction_comparison
+
 
 
 def plot_price_change_chart(df, title):
@@ -229,10 +236,10 @@ def plot_direction_comparison_chart(direction_comparison, title):
             symbols_text = '<br>'.join(direction_comparison[interval]['Symbols'])  # Join symbols with line breaks
             annotations.append(dict(
                 x=i * 2 + 1,
-                y=y_position + 2,
+                y=y_position + 4,
                 text=symbols_text,
                 showarrow=False,
-                font=dict(size=12, color='yellow'),
+                font=dict(size=12, color='red'),
                 align='center',
                 xanchor='center'
             ))
@@ -416,5 +423,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
