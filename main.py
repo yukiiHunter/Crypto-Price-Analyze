@@ -22,7 +22,7 @@ def calculate_price_change(df):
     return df
 
 def calculate_direction_comparison(avg_changes_df, intervals):
-    direction_comparison = {interval: {'Same Direction': 0, 'Opposite Direction': 0} for interval in intervals}
+    direction_comparison = {interval: {'Same Direction': 0, 'Opposite Direction': 0, 'Symbols': {}} for interval in intervals}
 
     for interval in intervals:
         interval_data = avg_changes_df[avg_changes_df['Interval'] == interval]
@@ -33,7 +33,12 @@ def calculate_direction_comparison(avg_changes_df, intervals):
             direction_comparison[interval]['Same Direction'] = (same_direction_count / len(interval_data)) * 100
             direction_comparison[interval]['Opposite Direction'] = (opposite_direction_count / len(interval_data)) * 100
 
+            # Collect symbols for opposite direction
+            symbols_negative = interval_data[interval_data['Average Change (%)'] <= 0]['Symbol'].tolist()
+            direction_comparison[interval]['Symbols'] = symbols_negative
+
     return direction_comparison
+
 
 def plot_price_change_chart(df, title):
     fig = go.Figure()
@@ -195,7 +200,7 @@ def plot_direction_comparison_chart(direction_comparison, title):
             l=100,
             r=100,
             t=100,
-            b=100
+            b=150  # Increased bottom margin to accommodate vertical text labels
         ),
         showlegend=False,
         shapes=shapes
@@ -215,6 +220,24 @@ def plot_direction_comparison_chart(direction_comparison, title):
                 max([direction_comparison[interval]['Opposite Direction'] for interval in intervals])) + 10
         ]
     )
+
+    # Add text annotations for symbols with negative changes below each bar
+    annotations = []
+    for i, interval in enumerate(intervals):
+        if direction_comparison[interval]['Symbols']:
+            y_position = -direction_comparison[interval]['Opposite Direction'] - 20  # Adjust the vertical position
+            symbols_text = '<br>'.join(direction_comparison[interval]['Symbols'])  # Join symbols with line breaks
+            annotations.append(dict(
+                x=i * 2 + 1,
+                y=y_position + 2,
+                text=symbols_text,
+                showarrow=False,
+                font=dict(size=12, color='yellow'),
+                align='center',
+                xanchor='center'
+            ))
+
+    fig.update_layout(annotations=annotations)
 
     return fig
 
@@ -378,7 +401,7 @@ def main():
             st.plotly_chart(fig_comparison, use_container_width=True)
             
             fig_overall_avg = plot_overall_average_chart(avg_changes_df, "Overall Average Price Change (%) for Selected Coins")
-            # st.plotly_chart(fig_overall_avg, use_container_width=True)
+            st.plotly_chart(fig_overall_avg, use_container_width=True)
             
             direction_comparison = calculate_direction_comparison(avg_changes_df, intervals)
             fig_direction_comparison = plot_direction_comparison_chart(direction_comparison, "Direction Comparison (%) of Selected Coins")
@@ -393,4 +416,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
