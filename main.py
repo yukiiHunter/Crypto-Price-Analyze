@@ -21,6 +21,20 @@ def calculate_price_change(df):
     df['Color'] = df['Price Change'].apply(lambda x: 'green' if x >= 0 else 'red')
     return df
 
+def calculate_direction_comparison(avg_changes_df, intervals):
+    direction_comparison = {interval: {'Same Direction': 0, 'Opposite Direction': 0} for interval in intervals}
+
+    for interval in intervals:
+        interval_data = avg_changes_df[avg_changes_df['Interval'] == interval]
+        if len(interval_data) > 0:
+            same_direction_count = (interval_data['Average Change (%)'] > 0).sum()
+            opposite_direction_count = (interval_data['Average Change (%)'] <= 0).sum()
+            
+            direction_comparison[interval]['Same Direction'] = (same_direction_count / len(interval_data)) * 100
+            direction_comparison[interval]['Opposite Direction'] = (opposite_direction_count / len(interval_data)) * 100
+
+    return direction_comparison
+
 def plot_price_change_chart(df, title):
     fig = go.Figure()
 
@@ -131,39 +145,37 @@ def plot_overall_average_chart(avg_changes, title):
 def plot_direction_comparison_chart(direction_comparison, title):
     fig = go.Figure()
 
-    # Define intervals and positions
     intervals = ['1m', '5m', '15m', '30m', '1h']
     interval_positions = {interval: i * 2 for i, interval in enumerate(intervals)}
 
-    # Add traces for direction comparison
     for interval in intervals:
         fig.add_trace(go.Bar(
             x=[f'{interval} - Same Direction'],
-            y=[direction_comparison['Same Direction']],
+            y=[direction_comparison[interval]['Same Direction']],
             marker_color='green',
             name='Same Direction'
         ))
 
         fig.add_trace(go.Bar(
             x=[f'{interval} - Opposite Direction'],
-            y=[-direction_comparison['Opposite Direction']],  # Negative for downward bar
+            y=[-direction_comparison[interval]['Opposite Direction']],  # Negative for downward bar
             marker_color='red',
             name='Opposite Direction'
         ))
 
-    # Add vertical lines to separate intervals
     shapes = []
     for position in interval_positions.values():
         shapes.append(dict(
             type='line',
-            x0=position + 1.5,  # Adjust start of the vertical line
-            y0=-max(direction_comparison['Same Direction'], direction_comparison['Opposite Direction']) - 10,
-            x1=position + 1.5,  # Adjust end of the vertical line
-            y1=max(direction_comparison['Same Direction'], direction_comparison['Opposite Direction']) + 10,
+            x0=position + 1.5,
+            y0=-max(max([direction_comparison[interval]['Same Direction'] for interval in intervals]),
+                    max([direction_comparison[interval]['Opposite Direction'] for interval in intervals])) - 10,
+            x1=position + 1.5,
+            y1=max(max([direction_comparison[interval]['Same Direction'] for interval in intervals]),
+                    max([direction_comparison[interval]['Opposite Direction'] for interval in intervals])) + 10,
             line=dict(color='red', width=2, dash='dash')
         ))
 
-    # Update layout
     fig.update_layout(
         title=title,
         xaxis_title='Interval',
@@ -178,28 +190,29 @@ def plot_direction_comparison_chart(direction_comparison, title):
         template='plotly_dark',
         autosize=True,
         height=600,
-        width=1200,  # Adjust width for better spacing
+        width=1200,
         margin=go.layout.Margin(
-            l=100,  # left margin, in px
-            r=100,  # right margin, in px
-            t=100,  # top margin, in px
-            b=100   # bottom margin, in px
+            l=100,
+            r=100,
+            t=100,
+            b=100
         ),
-        shapes=shapes  # Add vertical lines
+        showlegend=False,
+        shapes=shapes
     )
 
-    # Adjust text labels and positioning
     fig.update_traces(
-        texttemplate='%{y:.2f}%',  # Format text as percentage with two decimal places
-        textposition='inside',     # Position text inside the bars
-        textfont=dict(size=18)     # Adjust font size for better visibility
+        texttemplate='%{y:.2f}%',
+        textposition='inside',
+        textfont=dict(size=18)
     )
 
-    # Ensure the y-axis range is appropriate for better centering
     fig.update_yaxes(
         range=[
-            -max(direction_comparison['Same Direction'], direction_comparison['Opposite Direction']) - 10,
-            max(direction_comparison['Same Direction'], direction_comparison['Opposite Direction']) + 10
+            -max(max([direction_comparison[interval]['Same Direction'] for interval in intervals]),
+                 max([direction_comparison[interval]['Opposite Direction'] for interval in intervals])) - 10,
+            max(max([direction_comparison[interval]['Same Direction'] for interval in intervals]),
+                max([direction_comparison[interval]['Opposite Direction'] for interval in intervals])) + 10
         ]
     )
 
@@ -211,9 +224,9 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
     interval_positions = {}
     current_position = 0
 
-    for interval in intervals:
-        avg_changes = {}
+    avg_changes = {symbol1: [], symbol2: []}
 
+    for interval in intervals:
         for symbol in [symbol1, symbol2]:
             candles = client.get_klines(symbol=symbol, interval=interval)
             data = []
@@ -229,43 +242,48 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
             df = calculate_price_change(df)
             
             avg_change = df['Price Change (%)'].mean()
-            avg_changes[symbol] = avg_change
+            avg_changes[symbol].append(avg_change)
         
         color1 = 'green' if symbol1 == 'BTCUSDT' else 'orange'
         color2 = 'yellow' if symbol2 == 'BCHUSDT' else 'orange'
         
         fig.add_trace(go.Bar(
             x=[f'{interval} - {symbol1}'],
-            y=[avg_changes[symbol1]],
+            y=[avg_changes[symbol1][-1]],
             name=f'{symbol1}',
             marker_color=color1,
-            text=[f'{avg_changes[symbol1]:.2f}%'],
+            text=[f'{avg_changes[symbol1][-1]:.2f}%'],
             textposition='outside',
             textfont=dict(size=14)
         ))
 
         fig.add_trace(go.Bar(
             x=[f'{interval} - {symbol2}'],
-            y=[avg_changes[symbol2]],
+            y=[avg_changes[symbol2][-1]],
             name=f'{symbol2}',
             marker_color=color2,
-            text=[f'{avg_changes[symbol2]:.2f}%'],
+            text=[f'{avg_changes[symbol2][-1]:.2f}%'],
             textposition='outside',
             textfont=dict(size=14)
         ))
 
         interval_positions[interval] = current_position
-        current_position += 2
+        current_position += 2  # Adjust spacing
+
+    # Calculate dynamic y-axis range
+    all_changes = avg_changes[symbol1] + avg_changes[symbol2]
+    y_max = max(all_changes, default=0) * 1.1  # Add 10% padding
+    y_min = min(all_changes, default=0) * 1.1  # Add 10% padding
+    y_min = min(y_min, 0)  # Ensure y_min is not above zero
 
     shapes = []
     for interval, position in interval_positions.items():
         shapes.append(dict(
             type='line',
             x0=position + 1.5,
-            y0=0,
+            y0=y_min,
             x1=position + 1.5,
-            y1=1,
-            yref='paper',
+            y1=y_max - (y_max * 0.1),  # Extend line to the maximum height
             line=dict(color='red', width=2, dash='dash')
         ))
 
@@ -274,10 +292,10 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
     for i, (interval, position) in enumerate(interval_positions.items()):
         annotations.append(dict(
             x=position + 0.5,
-            y=1.05,
+            y=y_max,  # Position labels slightly above the maximum y-value
             text=interval_labels[i],
             showarrow=False,
-            font=dict(size=12, color='white'),
+            font=dict(size=16, color='white'),
             xanchor='center'
         ))
 
@@ -290,21 +308,22 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
         xaxis_rangeslider_visible=False,
         template='plotly_dark',
         autosize=True,
-        height=600,
+        height=800,
         width=1200,
         margin=go.layout.Margin(
             l=100,
             r=100,
             t=100,
-            b=100
+            b=150  # Increased bottom margin to accommodate x-axis labels
         ),
         showlegend=False,
         shapes=shapes,
-        annotations=annotations
+        annotations=annotations,
+        yaxis=dict(range=[y_min, y_max])  # Set dynamic y-axis range
     )
 
     return fig
-
+    
 def main():
     st.sidebar.title("Navigation")
     selection = st.sidebar.radio("Go to", ["Compare 20 Coins", "Compare BTCUSDT and BCHUSDT"])
@@ -317,7 +336,6 @@ def main():
 
         symbols = get_available_symbols()
 
-        # Input to select up to 20 symbols
         selected_symbols = st.multiselect(
             "Select up to 20 symbols", 
             options=symbols,
@@ -325,11 +343,9 @@ def main():
             default=st.session_state.selected_symbols
         )
 
-        # Update session state
         if selected_symbols != st.session_state.selected_symbols:
             st.session_state.selected_symbols = selected_symbols
 
-        # Check if at least 2 symbols are selected
         if len(selected_symbols) < 2:
             st.error("Please select at least 2 symbols to compare.")
             return
@@ -340,7 +356,6 @@ def main():
         for symbol in selected_symbols:
             for interval in intervals:
                 candles = client.get_klines(symbol=symbol, interval=interval)
-                
                 data = []
                 for candle in candles:
                     open_time = datetime.datetime.fromtimestamp(candle[0] / 1000)
@@ -351,7 +366,6 @@ def main():
                     data.append([open_time, open_price, high_price, low_price, close_price])
                 
                 df = pd.DataFrame(data, columns=['Time', 'Open', 'High', 'Low', 'Close'])
-                
                 df = calculate_price_change(df)
                 
                 avg_change = df['Price Change (%)'].mean()
@@ -366,33 +380,9 @@ def main():
             fig_overall_avg = plot_overall_average_chart(avg_changes_df, "Overall Average Price Change (%) for Selected Coins")
             # st.plotly_chart(fig_overall_avg, use_container_width=True)
             
-            direction_comparison = {
-                'Same Direction': avg_changes_df[avg_changes_df['Average Change (%)'] >= 0].shape[0] / avg_changes_df.shape[0] * 100,
-                'Opposite Direction': avg_changes_df[avg_changes_df['Average Change (%)'] < 0].shape[0] / avg_changes_df.shape[0] * 100
-            }
-            
+            direction_comparison = calculate_direction_comparison(avg_changes_df, intervals)
             fig_direction_comparison = plot_direction_comparison_chart(direction_comparison, "Direction Comparison (%) of Selected Coins")
             st.plotly_chart(fig_direction_comparison, use_container_width=True)
-
-        for symbol in selected_symbols:
-            for interval in intervals:
-                candles = client.get_klines(symbol=symbol, interval=interval)
-                
-                data = []
-                for candle in candles:
-                    open_time = datetime.datetime.fromtimestamp(candle[0] / 1000)
-                    open_price = float(candle[1])
-                    high_price = float(candle[2])
-                    low_price = float(candle[3])
-                    close_price = float(candle[4])
-                    data.append([open_time, open_price, high_price, low_price, close_price])
-                
-                df = pd.DataFrame(data, columns=['Time', 'Open', 'High', 'Low', 'Close'])
-                
-                df = calculate_price_change(df)
-                
-                fig_price_change = plot_price_change_chart(df, f"Price Change (%) ({symbol}, {interval})")
-                # st.plotly_chart(fig_price_change, use_container_width=True)
 
     elif selection == "Compare BTCUSDT and BCHUSDT":
         st.title("Compare BTCUSDT and BCHUSDT")
@@ -403,3 +393,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
