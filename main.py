@@ -4,6 +4,8 @@ import datetime
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import time
+from schedule import every, repeat, run_pending
 
 api_key = 'LOtOYSRqlH3lnIfxQSGldXsgMJMTK6VUFxh9tPMnWAQ71OYX5cLZXidCgRIU6RVQ'
 api_secret = 'QTINJGoWZO8VEUQ1F5K0afngYDqArWyuU2w3ur4jsVhBmGr5yAF93xcHtAc43bcl'
@@ -358,6 +360,8 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
 
     return fig
     
+import time
+
 def main():
     st.sidebar.title("Navigation")
     selection = st.sidebar.radio("Go to", ["Compare 20 Coins", "Compare BTCUSDT and BCHUSDT"])
@@ -366,7 +370,7 @@ def main():
         st.session_state.selected_symbols = []
 
     if selection == "Compare 20 Coins":
-        st.title("Cryptocurrency Price Analyze")
+        st.title("Cryptocurrency Price Analysis")
 
         symbols = get_available_symbols()
 
@@ -385,38 +389,43 @@ def main():
             return
 
         intervals = ['1m', '5m', '15m', '30m', '1h']
-        avg_changes = []
 
-        for symbol in selected_symbols:
-            for interval in intervals:
-                candles = client.get_klines(symbol=symbol, interval=interval)
-                data = []
-                for candle in candles:
-                    open_time = datetime.datetime.fromtimestamp(candle[0] / 1000)
-                    open_price = float(candle[1])
-                    high_price = float(candle[2])
-                    low_price = float(candle[3])
-                    close_price = float(candle[4])
-                    data.append([open_time, open_price, high_price, low_price, close_price])
+        while True:
+            avg_changes = []
+
+            for symbol in selected_symbols:
+                for interval in intervals:
+                    candles = client.get_klines(symbol=symbol, interval=interval)
+                    data = []
+                    for candle in candles:
+                        open_time = datetime.datetime.fromtimestamp(candle[0] / 1000)
+                        open_price = float(candle[1])
+                        high_price = float(candle[2])
+                        low_price = float(candle[3])
+                        close_price = float(candle[4])
+                        data.append([open_time, open_price, high_price, low_price, close_price])
+                    
+                    df = pd.DataFrame(data, columns=['Time', 'Open', 'High', 'Low', 'Close'])
+                    df = calculate_price_change(df)
+                    
+                    avg_change = df['Price Change (%)'].mean()
+                    avg_changes.append({'Symbol': symbol, 'Interval': interval, 'Average Change (%)': avg_change})
+
+            avg_changes_df = pd.DataFrame(avg_changes)
+
+            if len(selected_symbols) > 1:
+                fig_comparison = plot_comparison_chart(avg_changes_df, "Average Price Change (%) by Interval and Symbol")
+                st.plotly_chart(fig_comparison, use_container_width=True)
                 
-                df = pd.DataFrame(data, columns=['Time', 'Open', 'High', 'Low', 'Close'])
-                df = calculate_price_change(df)
+                fig_overall_avg = plot_overall_average_chart(avg_changes_df, "Overall Average Price Change (%) for Selected Coins")
+                # st.plotly_chart(fig_overall_avg, use_container_width=True)
                 
-                avg_change = df['Price Change (%)'].mean()
-                avg_changes.append({'Symbol': symbol, 'Interval': interval, 'Average Change (%)': avg_change})
+                direction_comparison = calculate_direction_comparison(avg_changes_df, intervals)
+                fig_direction_comparison = plot_direction_comparison_chart(direction_comparison, "Direction Comparison (%) of Selected Coins")
+                st.plotly_chart(fig_direction_comparison, use_container_width=True)
 
-        avg_changes_df = pd.DataFrame(avg_changes)
-
-        if len(selected_symbols) > 1:
-            fig_comparison = plot_comparison_chart(avg_changes_df, "Average Price Change (%) by Interval and Symbol")
-            st.plotly_chart(fig_comparison, use_container_width=True)
-            
-            fig_overall_avg = plot_overall_average_chart(avg_changes_df, "Overall Average Price Change (%) for Selected Coins")
-            # st.plotly_chart(fig_overall_avg, use_container_width=True)
-            
-            direction_comparison = calculate_direction_comparison(avg_changes_df, intervals)
-            fig_direction_comparison = plot_direction_comparison_chart(direction_comparison, "Direction Comparison (%) of Selected Coins")
-            st.plotly_chart(fig_direction_comparison, use_container_width=True)
+            time.sleep(30)  # Wait for 30 seconds before updating
+            st.rerun()  # Rerun the script to update data
 
     elif selection == "Compare BTCUSDT and BCHUSDT":
         st.title("Compare BTCUSDT and BCHUSDT")
