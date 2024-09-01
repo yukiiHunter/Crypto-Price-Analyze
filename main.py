@@ -131,48 +131,75 @@ def plot_overall_average_chart(avg_changes, title):
 def plot_direction_comparison_chart(direction_comparison, title):
     fig = go.Figure()
 
-    fig.add_trace(go.Bar(
-        x=['Direction'],
-        y=[direction_comparison['Same Direction']],
-        marker_color='green',
-        name='Same Direction'
-    ))
+    # Define intervals and positions
+    intervals = ['1m', '5m', '15m', '30m', '1h']
+    interval_positions = {interval: i * 2 for i, interval in enumerate(intervals)}
 
-    fig.add_trace(go.Bar(
-        x=['Direction'],
-        y=[-direction_comparison['Opposite Direction']],
-        marker_color='red',
-        name='Opposite Direction'
-    ))
+    # Add traces for direction comparison
+    for interval in intervals:
+        fig.add_trace(go.Bar(
+            x=[f'{interval} - Same Direction'],
+            y=[direction_comparison['Same Direction']],
+            marker_color='green',
+            name='Same Direction'
+        ))
 
+        fig.add_trace(go.Bar(
+            x=[f'{interval} - Opposite Direction'],
+            y=[-direction_comparison['Opposite Direction']],  # Negative for downward bar
+            marker_color='red',
+            name='Opposite Direction'
+        ))
+
+    # Add vertical lines to separate intervals
+    shapes = []
+    for position in interval_positions.values():
+        shapes.append(dict(
+            type='line',
+            x0=position + 1.5,  # Adjust start of the vertical line
+            y0=-max(direction_comparison['Same Direction'], direction_comparison['Opposite Direction']) - 10,
+            x1=position + 1.5,  # Adjust end of the vertical line
+            y1=max(direction_comparison['Same Direction'], direction_comparison['Opposite Direction']) + 10,
+            line=dict(color='red', width=2, dash='dash')
+        ))
+
+    # Update layout
     fig.update_layout(
         title=title,
-        xaxis_title='Direction',
+        xaxis_title='Interval',
         yaxis_title='Percentage (%)',
+        xaxis=dict(
+            tickvals=[i + 1 for i in interval_positions.values()],
+            ticktext=intervals,
+            title='Interval'
+        ),
         xaxis_rangeslider_visible=False,
         barmode='relative',
         template='plotly_dark',
         autosize=True,
         height=600,
-        width=600,
+        width=1200,  # Adjust width for better spacing
         margin=go.layout.Margin(
-            l=100,
-            r=100,
-            t=100,
-            b=100
-        )
+            l=100,  # left margin, in px
+            r=100,  # right margin, in px
+            t=100,  # top margin, in px
+            b=100   # bottom margin, in px
+        ),
+        shapes=shapes  # Add vertical lines
     )
 
+    # Adjust text labels and positioning
     fig.update_traces(
-        texttemplate='%{y:.2f}%',
-        textposition='inside',
-        textfont=dict(size=18)
+        texttemplate='%{y:.2f}%',  # Format text as percentage with two decimal places
+        textposition='inside',     # Position text inside the bars
+        textfont=dict(size=18)     # Adjust font size for better visibility
     )
 
+    # Ensure the y-axis range is appropriate for better centering
     fig.update_yaxes(
         range=[
-            min(-direction_comparison['Opposite Direction'], direction_comparison['Same Direction']) - 10,
-            max(direction_comparison['Same Direction'], -direction_comparison['Opposite Direction']) + 10
+            -max(direction_comparison['Same Direction'], direction_comparison['Opposite Direction']) - 10,
+            max(direction_comparison['Same Direction'], direction_comparison['Opposite Direction']) + 10
         ]
     )
 
