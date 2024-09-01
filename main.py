@@ -5,6 +5,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import time
+from schedule import every, repeat, run_pending
 
 api_key = 'LOtOYSRqlH3lnIfxQSGldXsgMJMTK6VUFxh9tPMnWAQ71OYX5cLZXidCgRIU6RVQ'
 api_secret = 'QTINJGoWZO8VEUQ1F5K0afngYDqArWyuU2w3ur4jsVhBmGr5yAF93xcHtAc43bcl'
@@ -421,7 +422,7 @@ def main():
                 
                 direction_comparison = calculate_direction_comparison(avg_changes_df, intervals)
                 fig_direction_comparison = plot_direction_comparison_chart(direction_comparison, "Direction Comparison (%) of Selected Coins")
-                st.plotly_chart(fig_direction_comparison, use_container_width=True)
+                st.pl   otly_chart(fig_direction_comparison, use_container_width=True)
 
             time.sleep(30)  # Wait for 30 seconds before updating
             st.rerun()  # Rerun the script to update data
@@ -430,8 +431,14 @@ def main():
         st.title("Compare BTCUSDT and BCHUSDT")
 
         intervals = ['1m', '5m', '15m', '30m', '1h', '4h', '8h', '1d']
-        fig_comparison = plot_symbol_comparison_chart('BTCUSDT', 'BCHUSDT', intervals, "BTCUSDT vs BCHUSDT Price Change (%)")
-        st.plotly_chart(fig_comparison, use_container_width=True)
+
+        while True:
+            fig_comparison = plot_symbol_comparison_chart('BTCUSDT', 'BCHUSDT', intervals, "BTCUSDT vs BCHUSDT Price Change (%)")
+            st.plotly_chart(fig_comparison, use_container_width=True)
+
+            time.sleep(30)  # Wait for 30 seconds before updating
+
+            st.experimental_rerun()  # Rerun the script to update data
 
 if __name__ == "__main__":
     main()
