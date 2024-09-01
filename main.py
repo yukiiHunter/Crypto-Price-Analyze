@@ -228,18 +228,22 @@ def plot_direction_comparison_chart(direction_comparison, title):
         ]
     )
 
-    # Add text annotations for symbols with negative changes below each bar
+    # Add text annotations for symbols with negative or positive changes
     annotations = []
     for i, interval in enumerate(intervals):
         if direction_comparison[interval]['Symbols']:
-            y_position = -direction_comparison[interval]['Opposite Direction'] - 20  # Adjust the vertical position
+            if direction_comparison[interval]['Opposite Direction'] < 50:  # Taken from Opposite Direction
+                y_position = -direction_comparison[interval]['Opposite Direction'] - 20  # Below the red bar
+            else:  # Taken from Same Direction
+                y_position = direction_comparison[interval]['Same Direction'] + 4  # Above the green bar
+
             symbols_text = '<br>'.join(direction_comparison[interval]['Symbols'])  # Join symbols with line breaks
             annotations.append(dict(
                 x=i * 2 + 1,
-                y=y_position + 4,
+                y=y_position,
                 text=symbols_text,
                 showarrow=False,
-                font=dict(size=12, color='red'),
+                font=dict(size=12, color='red' if direction_comparison[interval]['Opposite Direction'] < 50 else 'green'),
                 align='center',
                 xanchor='center'
             ))
@@ -423,4 +427,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
