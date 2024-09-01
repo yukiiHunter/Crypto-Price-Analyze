@@ -5,7 +5,6 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import time
-from schedule import every, repeat, run_pending
 
 api_key = 'LOtOYSRqlH3lnIfxQSGldXsgMJMTK6VUFxh9tPMnWAQ71OYX5cLZXidCgRIU6RVQ'
 api_secret = 'QTINJGoWZO8VEUQ1F5K0afngYDqArWyuU2w3ur4jsVhBmGr5yAF93xcHtAc43bcl'
