@@ -422,7 +422,7 @@ def main():
                 
                 direction_comparison = calculate_direction_comparison(avg_changes_df, intervals)
                 fig_direction_comparison = plot_direction_comparison_chart(direction_comparison, "Direction Comparison (%) of Selected Coins")
-                st.pl   otly_chart(fig_direction_comparison, use_container_width=True)
+                st.plotly_chart(fig_direction_comparison, use_container_width=True)
 
             time.sleep(30)  # Wait for 30 seconds before updating
             st.rerun()  # Rerun the script to update data
