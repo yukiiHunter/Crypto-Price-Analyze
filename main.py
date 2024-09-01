@@ -437,7 +437,7 @@ def main():
 
             time.sleep(30)  # Wait for 30 seconds before updating
 
-            st.experimental_rerun()  # Rerun the script to update data
+            st.rerun()  # Rerun the script to update data
 
 if __name__ == "__main__":
     main()
