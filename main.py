@@ -401,7 +401,7 @@ def main():
             st.plotly_chart(fig_comparison, use_container_width=True)
             
             fig_overall_avg = plot_overall_average_chart(avg_changes_df, "Overall Average Price Change (%) for Selected Coins")
-            st.plotly_chart(fig_overall_avg, use_container_width=True)
+            # st.plotly_chart(fig_overall_avg, use_container_width=True)
             
             direction_comparison = calculate_direction_comparison(avg_changes_df, intervals)
             fig_direction_comparison = plot_direction_comparison_chart(direction_comparison, "Direction Comparison (%) of Selected Coins")
