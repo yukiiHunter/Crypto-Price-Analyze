@@ -269,13 +269,13 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
                 open_time = datetime.datetime.fromtimestamp(candle[0] / 1000)
                 open_price = float(candle[1])
                 close_price = float(candle[4])
-                # Calculate percentage change from Open to Close
-                percentage_change = ((close_price - open_price) / open_price) * 100
+                # Calculate percentage change as (Open - Close) / Open
+                percentage_change = ((open_price - close_price) / open_price) * 100
                 data.append([open_time, open_price, close_price, percentage_change])
             
             df = pd.DataFrame(data, columns=['Time', 'Open', 'Close', 'Percentage Change'])
             
-            # Average percentage change for the current interval
+            # Store the average percentage change for the current interval
             avg_change = df['Percentage Change'].mean()
             percentage_changes[symbol].append(avg_change)
         
@@ -339,7 +339,7 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
     fig.update_layout(
         title=title,
         xaxis_title='Interval',
-        yaxis_title='Percentage Change (Open to Close) (%)',
+        yaxis_title='Percentage Change (Open - Close) (%)',
         barmode='group',
         xaxis_tickangle=-90,
         xaxis_rangeslider_visible=False,
@@ -361,7 +361,73 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
 
     return fig
     
-import time
+def plot_minute_by_minute_chart(symbol1, symbol2, title):
+    fig = go.Figure()
+
+    # Define the interval to be 1 minute
+    interval = '1m'
+
+    percentage_changes = {symbol1: [], symbol2: []}
+    timestamps = []
+
+    for symbol in [symbol1, symbol2]:
+        candles = client.get_klines(symbol=symbol, interval=interval)
+        data = []
+        for candle in candles:
+            open_time = datetime.datetime.fromtimestamp(candle[0] / 1000)
+            open_price = float(candle[1])
+            close_price = float(candle[4])
+            # Calculate percentage change as (Close - Open) / Open
+            percentage_change = ((close_price - open_price) / open_price) * 100
+            data.append([open_time, percentage_change])
+            if symbol == symbol1:
+                timestamps.append(open_time)  # Store timestamps for x-axis
+        
+        percentage_changes[symbol] = [item[1] for item in data]  # Extract percentage changes
+
+    # Plot data for the first symbol
+    fig.add_trace(go.Scatter(
+        x=timestamps,
+        y=percentage_changes[symbol1],
+        mode='lines+markers',
+        name=f'{symbol1} Percentage Change (%)',
+        line=dict(color='green', width=3),  # Increased line width
+        marker=dict(size=8)  # Increased marker size
+    ))
+
+    # Plot data for the second symbol
+    fig.add_trace(go.Scatter(
+        x=timestamps,
+        y=percentage_changes[symbol2],
+        mode='lines+markers',
+        name=f'{symbol2} Percentage Change (%)',
+        line=dict(color='orange', width=3),  # Increased line width
+        marker=dict(size=8)  # Increased marker size
+    ))
+
+    # Calculate dynamic y-axis range for better visibility and zoom in 2x
+    all_changes = percentage_changes[symbol1] + percentage_changes[symbol2]
+    y_max = max(all_changes) * 0  # Add 5% padding (reduced to zoom in)
+    y_min = min(all_changes) * 0  # Add 5% padding (reduced to zoom in)
+
+    fig.update_layout(
+        title=title,
+        xaxis_title='Time',
+        yaxis_title='Percentage Change (%)',
+        template='plotly_dark',
+        autosize=True,
+        height=600,
+        width=1900,
+        margin=go.layout.Margin(
+            l=100,
+            r=100,
+            t=100,
+            b=100
+        ),
+        yaxis=dict(range=[y_min, y_max])  # Set tighter y-axis range
+    )
+    
+    return fig
 
 def main():
     st.sidebar.title("Navigation")
@@ -436,6 +502,9 @@ def main():
         while True:
             fig_comparison = plot_symbol_comparison_chart('BTCUSDT', 'BCHUSDT', intervals, "BTCUSDT vs BCHUSDT Price Change (%)")
             st.plotly_chart(fig_comparison, use_container_width=True)
+
+            fig_minute_by_minute = plot_minute_by_minute_chart('BTCUSDT', 'BCHUSDT', "BTCUSDT vs BCHUSDT Minute-by-Minute Price Change (%)")
+            st.plotly_chart(fig_minute_by_minute, use_container_width=True)
 
             time.sleep(30)  # Wait for 30 seconds before updating
 
