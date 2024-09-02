@@ -253,7 +253,7 @@ def plot_direction_comparison_chart(direction_comparison, title):
 
     return fig
 
-def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
+def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_period=3):
     fig = go.Figure()
 
     interval_positions = {}
@@ -269,49 +269,45 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
                 open_time = datetime.datetime.fromtimestamp(candle[0] / 1000)
                 open_price = float(candle[1])
                 close_price = float(candle[4])
-                # Calculate percentage change as (Open - Close) / Open
-                percentage_change = ((open_price - close_price) / open_price) * 100
+                percentage_change = ((open_price - close_price) / open_price) * 100  # Adjusted formula
                 data.append([open_time, open_price, close_price, percentage_change])
             
             df = pd.DataFrame(data, columns=['Time', 'Open', 'Close', 'Percentage Change'])
-            
-            # Store the average percentage change for the current interval
-            avg_change = df['Percentage Change'].mean()
+            df['Smoothed Change'] = df['Percentage Change'].rolling(window=smoothing_period).mean()  # Smoothing
+
+            avg_change = df['Smoothed Change'].iloc[-1]  # Use the last smoothed value
             percentage_changes[symbol].append(avg_change)
         
         color1 = 'green' if symbol1 == 'BTCUSDT' else 'orange'
         color2 = 'yellow' if symbol2 == 'BCHUSDT' else 'orange'
         
-        # Plot BTCUSDT
         fig.add_trace(go.Bar(
             x=[f'{interval} - {symbol1}'],
             y=[percentage_changes[symbol1][-1]],
             name=f'{symbol1}',
             marker_color=color1,
-            text=[f'{percentage_changes[symbol1][-1]:.2f}%'],
+            text=[f'{percentage_changes[symbol1][-1]:.4f}%'],
             textposition='outside',
             textfont=dict(size=14)
         ))
 
-        # Plot BCHUSDT
         fig.add_trace(go.Bar(
             x=[f'{interval} - {symbol2}'],
             y=[percentage_changes[symbol2][-1]],
             name=f'{symbol2}',
             marker_color=color2,
-            text=[f'{percentage_changes[symbol2][-1]:.2f}%'],
+            text=[f'{percentage_changes[symbol2][-1]:.4f}%'],
             textposition='outside',
             textfont=dict(size=14)
         ))
 
         interval_positions[interval] = current_position
-        current_position += 2  # Adjust spacing
+        current_position += 2
 
-    # Calculate dynamic y-axis range
     all_changes = percentage_changes[symbol1] + percentage_changes[symbol2]
-    y_max = max(all_changes, default=0) * 1.1  # Add 10% padding
-    y_min = min(all_changes, default=0) * 1.1  # Add 10% padding
-    y_min = min(y_min, 0)  # Ensure y_min is not above zero
+    y_max = max(all_changes, default=0) * 1.1
+    y_min = min(all_changes, default=0) * 1.1
+    y_min = min(y_min, 0)
 
     shapes = []
     for interval, position in interval_positions.items():
@@ -320,7 +316,7 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
             x0=position + 1.5,
             y0=y_min,
             x1=position + 1.5,
-            y1=y_max - (y_max * 0.1),  # Extend line to the maximum height
+            y1=y_max - (y_max * 0.1),
             line=dict(color='red', width=2, dash='dash')
         ))
 
@@ -329,7 +325,7 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
     for i, (interval, position) in enumerate(interval_positions.items()):
         annotations.append(dict(
             x=position + 0.5,
-            y=y_max,  # Position labels slightly above the maximum y-value
+            y=y_max,
             text=interval_labels[i],
             showarrow=False,
             font=dict(size=16, color='white'),
@@ -339,7 +335,7 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
     fig.update_layout(
         title=title,
         xaxis_title='Interval',
-        yaxis_title='Percentage Change (Open - Close) (%)',
+        yaxis_title='Percentage Change (Open - Close) (%)',  # Adjusted axis title
         barmode='group',
         xaxis_tickangle=-90,
         xaxis_rangeslider_visible=False,
@@ -351,12 +347,12 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
             l=100,
             r=100,
             t=100,
-            b=150  # Increased bottom margin to accommodate x-axis labels
+            b=150
         ),
         showlegend=False,
         shapes=shapes,
         annotations=annotations,
-        yaxis=dict(range=[y_min, y_max])  # Set dynamic y-axis range
+        yaxis=dict(range=[y_min, y_max])
     )
 
     return fig
