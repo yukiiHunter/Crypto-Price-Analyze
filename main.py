@@ -259,7 +259,7 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
     interval_positions = {}
     current_position = 0
 
-    avg_changes = {symbol1: [], symbol2: []}
+    percentage_changes = {symbol1: [], symbol2: []}
 
     for interval in intervals:
         for symbol in [symbol1, symbol2]:
@@ -268,36 +268,38 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
             for candle in candles:
                 open_time = datetime.datetime.fromtimestamp(candle[0] / 1000)
                 open_price = float(candle[1])
-                high_price = float(candle[2])
-                low_price = float(candle[3])
                 close_price = float(candle[4])
-                data.append([open_time, open_price, high_price, low_price, close_price])
+                # Calculate percentage change from Open to Close
+                percentage_change = ((close_price - open_price) / open_price) * 100
+                data.append([open_time, open_price, close_price, percentage_change])
             
-            df = pd.DataFrame(data, columns=['Time', 'Open', 'High', 'Low', 'Close'])
-            df = calculate_price_change(df)
+            df = pd.DataFrame(data, columns=['Time', 'Open', 'Close', 'Percentage Change'])
             
-            avg_change = df['Price Change (%)'].mean()
-            avg_changes[symbol].append(avg_change)
+            # Average percentage change for the current interval
+            avg_change = df['Percentage Change'].mean()
+            percentage_changes[symbol].append(avg_change)
         
         color1 = 'green' if symbol1 == 'BTCUSDT' else 'orange'
         color2 = 'yellow' if symbol2 == 'BCHUSDT' else 'orange'
         
+        # Plot BTCUSDT
         fig.add_trace(go.Bar(
             x=[f'{interval} - {symbol1}'],
-            y=[avg_changes[symbol1][-1]],
+            y=[percentage_changes[symbol1][-1]],
             name=f'{symbol1}',
             marker_color=color1,
-            text=[f'{avg_changes[symbol1][-1]:.2f}%'],
+            text=[f'{percentage_changes[symbol1][-1]:.2f}%'],
             textposition='outside',
             textfont=dict(size=14)
         ))
 
+        # Plot BCHUSDT
         fig.add_trace(go.Bar(
             x=[f'{interval} - {symbol2}'],
-            y=[avg_changes[symbol2][-1]],
+            y=[percentage_changes[symbol2][-1]],
             name=f'{symbol2}',
             marker_color=color2,
-            text=[f'{avg_changes[symbol2][-1]:.2f}%'],
+            text=[f'{percentage_changes[symbol2][-1]:.2f}%'],
             textposition='outside',
             textfont=dict(size=14)
         ))
@@ -306,7 +308,7 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
         current_position += 2  # Adjust spacing
 
     # Calculate dynamic y-axis range
-    all_changes = avg_changes[symbol1] + avg_changes[symbol2]
+    all_changes = percentage_changes[symbol1] + percentage_changes[symbol2]
     y_max = max(all_changes, default=0) * 1.1  # Add 10% padding
     y_min = min(all_changes, default=0) * 1.1  # Add 10% padding
     y_min = min(y_min, 0)  # Ensure y_min is not above zero
@@ -337,7 +339,7 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title):
     fig.update_layout(
         title=title,
         xaxis_title='Interval',
-        yaxis_title='Average Price Change (%)',
+        yaxis_title='Percentage Change (Open to Close) (%)',
         barmode='group',
         xaxis_tickangle=-90,
         xaxis_rangeslider_visible=False,
