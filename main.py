@@ -5,17 +5,24 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import time
+import csv
 
 api_key = 'LOtOYSRqlH3lnIfxQSGldXsgMJMTK6VUFxh9tPMnWAQ71OYX5cLZXidCgRIU6RVQ'
 api_secret = 'QTINJGoWZO8VEUQ1F5K0afngYDqArWyuU2w3ur4jsVhBmGr5yAF93xcHtAc43bcl'
 
 client = Client(api_key, api_secret, testnet=True)
 
+default_symbols = [
+    'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT', 'TRXUSDT', 
+    'ADAUSDT', 'SHIBUSDT', 'LINKUSDT', 'DOTUSDT', 'BCHUSDT', 'LTCUSDT', 'MATICUSDT', 
+    'UNIUSDT', 'XLMUSDT', 'AAVEUSDT', 'ARBUSDT', 'VETUSDT', 'ATOMUSDT'
+]
+
 def get_available_symbols():
     tickers = client.get_all_tickers()
     symbols = [ticker['symbol'] for ticker in tickers if ticker['symbol'].endswith('USDT')]
     return symbols
-
+    
 def calculate_price_change(df):
     df['Price Change'] = df['Close'] - df['Open']
     df['Price Change (%)'] = df['Price Change'] / df['Open'] * 100
@@ -45,49 +52,6 @@ def calculate_direction_comparison(avg_changes_df, intervals):
             direction_comparison[interval]['Symbols'] = symbols_to_collect
 
     return direction_comparison
-
-
-
-def plot_price_change_chart(df, title):
-    fig = go.Figure()
-
-    # Add trace for price change percentage
-    fig.add_trace(go.Bar(
-        x=df['Time'],
-        y=df['Price Change (%)'],
-        marker_color=df['Color'],
-        name='Price Change (%)'
-    ))
-
-    # Update layout
-    fig.update_layout(
-        title=title,
-        xaxis_title='Time',
-        yaxis_title='Price Change (%)',
-        xaxis_rangeslider_visible=False,
-        template='plotly_dark',
-        autosize=True,
-        height=600,
-        width=1200,
-        margin=go.layout.Margin(
-            l=100,
-            r=100,
-            t=100,
-            b=100
-        )
-    )
-    
-    if len(df) > 20:
-        fig.update_xaxes(range=[df['Time'].iloc[-21], df['Time'].iloc[-1]])
-
-    fig.update_yaxes(
-        range=[
-            df['Price Change (%)'].min() - df['Price Change (%)'].std(),
-            df['Price Change (%)'].max() + df['Price Change (%)'].std()
-        ]
-    )
-    
-    return fig
 
 def plot_comparison_chart(avg_changes, title):
     fig = go.Figure()
@@ -155,7 +119,25 @@ def plot_overall_average_chart(avg_changes, title):
     
     return fig
 
+def log_low_percentage_changes(direction_comparison, filename='logData.csv', threshold=50):
+    # Open the CSV file for writing
+    with open(filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        
+        # Write header
+        # writer.writerow(['Interval', 'Direction', 'Percentage Change', 'Symbols'])
+        
+        for interval in direction_comparison.keys():
+            for direction in ['Same Direction', 'Opposite Direction']:
+                percentage_change = direction_comparison[interval][direction]
+                if percentage_change < threshold:
+                    symbols = direction_comparison[interval].get('Symbols', [])
+                    # Write a row for each entry with low percentage change
+                    writer.writerow([interval, direction, percentage_change, ', '.join(symbols)])
+
 def plot_direction_comparison_chart(direction_comparison, title):
+    import plotly.graph_objects as go
+
     fig = go.Figure()
 
     intervals = ['1m', '5m', '15m', '30m', '1h']
@@ -234,9 +216,9 @@ def plot_direction_comparison_chart(direction_comparison, title):
     for i, interval in enumerate(intervals):
         if direction_comparison[interval]['Symbols']:
             if direction_comparison[interval]['Opposite Direction'] < 50:  # Taken from Opposite Direction
-                y_position = -direction_comparison[interval]['Opposite Direction'] - 20  # Below the red bar
+                y_position = -direction_comparison[interval]['Opposite Direction'] - 20*2  # Below the red bar
             else:  # Taken from Same Direction
-                y_position = direction_comparison[interval]['Same Direction'] + 4  # Above the green bar
+                y_position = direction_comparison[interval]['Same Direction'] + 4*2  # Above the green bar
 
             symbols_text = '<br>'.join(direction_comparison[interval]['Symbols'])  # Join symbols with line breaks
             annotations.append(dict(
@@ -250,8 +232,76 @@ def plot_direction_comparison_chart(direction_comparison, title):
             ))
 
     fig.update_layout(annotations=annotations)
-
     return fig
+
+# # Dataframe untuk menyimpan log
+# log_df = pd.DataFrame(columns=["Timestamp", "Interval", "Description"])
+
+# # Initialize the log DataFrame
+# if 'log_df' not in st.session_state:
+#     st.session_state.log_df = pd.DataFrame(columns=['Timestamp', 'Log'])
+
+# def add_log(message, timestamp=None):
+#     if timestamp is None:
+#         timestamp = datetime.datetime.now().strftime("%d %B %Y %H:%M")
+#     new_log = {'Timestamp': timestamp, 'Log': message}
+#     st.session_state.log_df = st.session_state.log_df.append(new_log, ignore_index=True)
+#     st.session_state.log_df['Timestamp'] = pd.to_datetime(st.session_state.log_df['Timestamp'], format="%d %B %Y %H:%M")
+#     st.session_state.log_df = st.session_state.log_df.sort_values(by='Timestamp', ascending=False)
+#     st.session_state.log_df.to_csv('log.csv', index=False)
+
+# def load_logs():
+#     if os.path.exists('log.csv'):
+#         st.session_state.log_df = pd.read_csv('log.csv', parse_dates=['Timestamp'])
+#     else:
+#         st.session_state.log_df = pd.DataFrame(columns=['Timestamp', 'Log'])
+
+# if 'last_log_time' not in st.session_state:
+#     st.session_state.last_log_time = datetime.datetime.now() - datetime.timedelta(minutes=15)
+
+
+# Fungsi untuk mengunduh log sebagai CSV
+# def download_log_csv(log_df):
+#     csv = log_df.to_csv(index=False)
+#     st.download_button(label="Download Log CSV", data=csv, file_name='btc_bch_price_change_log.csv', mime='text/csv')
+
+# def detect_and_log_deviation(timestamp, symbol1, symbol1_change, symbol2, symbol2_change, interval, log_entries):
+#     if (symbol1_change >= 0 and symbol2_change < 0) or (symbol1_change < 0 and symbol2_change >= 0):
+#         log_entry = (f'Penyimpangan pada bar {interval}, {symbol1} {symbol1_change:.2f}% {symbol2} {symbol2_change:.2f}% '
+#                      f'jam {timestamp.strftime("%H:%M")} tanggal {timestamp.strftime("%d %B %Y")}')
+#         log_entries.append(log_entry)
+
+# def save_logs(log_entries):
+#     # Only write logs for specific intervals
+#     valid_intervals = ['15m', '30m', '1h', '4h', '8h', '1d']
+#     filtered_logs = [entry for entry in log_entries if any(interval in entry for interval in valid_intervals)]
+
+#     # Read existing logs from the file if it exists
+#     if os.path.exists('logs.csv'):
+#         with open('logs.csv', mode='r', encoding='utf-8') as file:
+#             existing_logs = file.readlines()
+#     else:
+#         existing_logs = []
+
+#     # Prepend new log entries
+#     with open('logs.csv', mode='w', newline='', encoding='utf-8') as file:
+#         writer = csv.writer(file)
+#         # Write new logs first
+#         for entry in filtered_logs:
+#             writer.writerow([entry])
+#         # Then write existing logs
+#         for log in existing_logs:
+#             file.write(log)
+
+#     # Prepend new log entries
+#     with open('logs.csv', mode='w', newline='', encoding='utf-8') as file:
+#         writer = csv.writer(file)
+#         # Write new logs first
+#         for entry in log_entries:
+#             writer.writerow([entry])
+#         # Then write existing logs
+#         for log in existing_logs:
+#             file.write(log)
 
 def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_period=3):
     fig = go.Figure()
@@ -260,6 +310,7 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
     current_position = 0
 
     percentage_changes = {symbol1: [], symbol2: []}
+    log_entries = []
 
     for interval in intervals:
         for symbol in [symbol1, symbol2]:
@@ -288,7 +339,7 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
             marker_color=color1,
             text=[f'{percentage_changes[symbol1][-1]:.4f}%'],
             textposition='outside',
-            textfont=dict(size=14)
+            textfont=dict(size=25)
         ))
 
         fig.add_trace(go.Bar(
@@ -298,11 +349,15 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
             marker_color=color2,
             text=[f'{percentage_changes[symbol2][-1]:.4f}%'],
             textposition='outside',
-            textfont=dict(size=14)
+            textfont=dict(size=25)
         ))
 
         interval_positions[interval] = current_position
         current_position += 2
+
+        # Detect and log deviations only for specific intervals
+        # if interval in ['15m', '30m', '1h', '4h', '8h', '1d']:
+        #     detect_and_log_deviation(datetime.datetime.now(), symbol1, percentage_changes[symbol1][-1], symbol2, percentage_changes[symbol2][-1], interval, log_entries)
 
     all_changes = percentage_changes[symbol1] + percentage_changes[symbol2]
     y_max = max(all_changes, default=0) * 1.1
@@ -355,77 +410,134 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
         yaxis=dict(range=[y_min, y_max])
     )
 
+    # Save log entries to CSV file
+    # if log_entries:
+    #     save_logs(log_entries)
+
     return fig
     
-def plot_minute_by_minute_chart(symbol1, symbol2, title):
+# def plot_minute_by_minute_chart(symbols, title):
+#     fig = go.Figure()
+
+#     # Define the interval to be 1 minute
+#     interval = '1m'
+
+#     percentage_changes = {symbol: [] for symbol in symbols}
+#     timestamps = []
+
+#     for symbol in symbols:
+#         candles = client.get_klines(symbol=symbol, interval=interval)
+#         data = []
+#         for candle in candles:
+#             open_time = datetime.datetime.fromtimestamp(candle[0] / 1000)
+#             open_price = float(candle[1])
+#             close_price = float(candle[4])
+#             # Calculate percentage change as (Close - Open) / Open
+#             percentage_change = ((close_price - open_price) / open_price) * 100
+#             data.append([open_time, percentage_change])
+#             if not timestamps:  # Store timestamps for x-axis only once
+#                 timestamps.append(open_time)
+        
+#         percentage_changes[symbol] = [item[1] for item in data]  # Extract percentage changes
+
+#     # Plot data for each symbol as bars
+#     for symbol in symbols:
+#         fig.add_trace(go.Bar(
+#             x=timestamps,
+#             y=percentage_changes[symbol],
+#             name=f'{symbol}',
+#             marker=dict(
+#                 line=dict(width=4)  # Border width around the bars
+#             ),
+#         ))
+
+#     # Autoscale on Y-axis by removing manual range setting
+#     fig.update_layout(
+#         title=title,
+#         xaxis_title='Time',
+#         yaxis_title='Percentage Change (%)',
+#         template='plotly_dark',
+#         autosize=True,
+#         height=600,
+#         width=1200,
+#         margin=go.layout.Margin(
+#             l=100,
+#             r=100,
+#             t=100,
+#             b=100
+#         ),
+#         barmode='group',  # Group bars for better comparison
+#         bargap=0.15,  # Gap between bars
+#         bargroupgap=0.1  # Gap between groups of bars
+#     )
+    
+#     return fig
+
+def calculate_percentage_change(symbol, interval='1m'):
+    candles = client.get_klines(symbol=symbol, interval=interval)
+    total_percentage_change = 0
+    total_data_points = 0
+
+    for candle in candles:
+        open_price = float(candle[1])
+        close_price = float(candle[4])
+        percentage_change = ((close_price - open_price) / open_price) * 100
+        total_percentage_change += percentage_change
+        total_data_points += 1
+
+    return total_percentage_change / total_data_points if total_data_points > 0 else 0
+
+def plot_combined_percentage_chart(selected_symbols, title):
+    # Retrieve or initialize previous data points
+    if 'time_series_data' not in st.session_state:
+        st.session_state.time_series_data = []
+
+    # Calculate the average percentage change across all selected symbols
+    avg_percentage_change = 0
+    if selected_symbols:
+        avg_percentage_change = sum(calculate_percentage_change(symbol) for symbol in selected_symbols) / len(selected_symbols)
+
+    # Append the new data point (timestamp and average percentage change)
+    st.session_state.time_series_data.append({
+        'Time': datetime.datetime.now(),
+        'Average Percentage Change': avg_percentage_change
+    })
+
+    # Convert to DataFrame for plotting
+    df = pd.DataFrame(st.session_state.time_series_data)
+
+    # Plot the graph with line + markers
     fig = go.Figure()
 
-    # Define the interval to be 1 minute
-    interval = '1m'
-
-    percentage_changes = {symbol1: [], symbol2: []}
-    timestamps = []
-
-    for symbol in [symbol1, symbol2]:
-        candles = client.get_klines(symbol=symbol, interval=interval)
-        data = []
-        for candle in candles:
-            open_time = datetime.datetime.fromtimestamp(candle[0] / 1000)
-            open_price = float(candle[1])
-            close_price = float(candle[4])
-            # Calculate percentage change as (Close - Open) / Open
-            percentage_change = ((close_price - open_price) / open_price) * 100
-            data.append([open_time, percentage_change])
-            if symbol == symbol1:
-                timestamps.append(open_time)  # Store timestamps for x-axis
-        
-        percentage_changes[symbol] = [item[1] for item in data]  # Extract percentage changes
-
-    # Plot data for the first symbol
     fig.add_trace(go.Scatter(
-        x=timestamps,
-        y=percentage_changes[symbol1],
+        x=df['Time'],
+        y=df['Average Percentage Change'],
         mode='lines+markers',
-        name=f'{symbol1} Percentage Change (%)',
-        line=dict(color='green', width=3),  # Increased line width
-        marker=dict(size=8)  # Increased marker size
+        name='Average Change',
+        line=dict(color='blue')
     ))
 
-    # Plot data for the second symbol
-    fig.add_trace(go.Scatter(
-        x=timestamps,
-        y=percentage_changes[symbol2],
-        mode='lines+markers',
-        name=f'{symbol2} Percentage Change (%)',
-        line=dict(color='orange', width=3),  # Increased line width
-        marker=dict(size=8)  # Increased marker size
-    ))
-
-    # Calculate dynamic y-axis range for better visibility and zoom in 2x
-    all_changes = percentage_changes[symbol1] + percentage_changes[symbol2]
-    y_max = max(all_changes) * 0  # Add 5% padding (reduced to zoom in)
-    y_min = min(all_changes) * 0  # Add 5% padding (reduced to zoom in)
-
+    # Update layout
     fig.update_layout(
         title=title,
         xaxis_title='Time',
-        yaxis_title='Percentage Change (%)',
+        yaxis_title='Average Percentage Change (%)',
         template='plotly_dark',
         autosize=True,
         height=600,
-        width=1900,
+        width=1200,
         margin=go.layout.Margin(
             l=100,
             r=100,
             t=100,
             b=100
-        ),
-        yaxis=dict(range=[y_min, y_max])  # Set tighter y-axis range
+        )
     )
-    
+
     return fig
 
 def main():
+    # load_logs()
     st.sidebar.title("Navigation")
     selection = st.sidebar.radio("Go to", ["Compare 20 Coins", "Compare BTCUSDT and BCHUSDT"])
 
@@ -437,11 +549,18 @@ def main():
 
         symbols = get_available_symbols()
 
+        # selected_symbols = st.multiselect(
+        #     "Select up to 20 symbols", 
+        #     options=symbols,
+        #     max_selections=20,
+        #     default=st.session_state.selected_symbols
+        # )
+
         selected_symbols = st.multiselect(
-            "Select up to 20 symbols", 
-            options=symbols,
+            'Select coins to compare:', 
+            options=get_available_symbols(), 
             max_selections=20,
-            default=st.session_state.selected_symbols
+            default=default_symbols
         )
 
         if selected_symbols != st.session_state.selected_symbols:
@@ -480,12 +599,14 @@ def main():
                 fig_comparison = plot_comparison_chart(avg_changes_df, "Average Price Change (%) by Interval and Symbol")
                 st.plotly_chart(fig_comparison, use_container_width=True)
                 
-                fig_overall_avg = plot_overall_average_chart(avg_changes_df, "Overall Average Price Change (%) for Selected Coins")
-                # st.plotly_chart(fig_overall_avg, use_container_width=True)
-                
                 direction_comparison = calculate_direction_comparison(avg_changes_df, intervals)
                 fig_direction_comparison = plot_direction_comparison_chart(direction_comparison, "Direction Comparison (%) of Selected Coins")
                 st.plotly_chart(fig_direction_comparison, use_container_width=True)
+                
+                avg_changes_df = pd.DataFrame(avg_changes)
+
+                fig_combined = plot_combined_percentage_chart(selected_symbols, "Combined Average Percentage Change for Selected Coins")
+                st.plotly_chart(fig_combined, use_container_width=True)
 
             time.sleep(30)  # Wait for 30 seconds before updating
             st.rerun()  # Rerun the script to update data
@@ -495,16 +616,31 @@ def main():
 
         intervals = ['1m', '5m', '15m', '30m', '1h', '4h', '8h', '1d']
 
+        log_entries = []  # Initialize log entries list
+
         while True:
             fig_comparison = plot_symbol_comparison_chart('BTCUSDT', 'BCHUSDT', intervals, "BTCUSDT vs BCHUSDT Price Change (%)")
             st.plotly_chart(fig_comparison, use_container_width=True)
 
-            fig_minute_by_minute = plot_minute_by_minute_chart('BTCUSDT', 'BCHUSDT', "BTCUSDT vs BCHUSDT Minute-by-Minute Price Change (%)")
-            st.plotly_chart(fig_minute_by_minute, use_container_width=True)
+            # Display logs in a table
+            # if datetime.datetime.now() - st.session_state.last_log_time >= datetime.timedelta(minutes=15):
+            #     if os.path.exists('logs.csv'):
+            #         logs_df = pd.read_csv('logs.csv', names=['Log'])
+            #         st.write("### Logs")
+            #         st.write(logs_df)
+
+            #         # Provide download link for the CSV file
+            #         with open('logs.csv', 'r') as file:
+            #             st.download_button(
+            #                 label="Download Logs",
+            #                 data=file,
+            #                 file_name='logs.csv',
+            #                 mime='text/csv'
+            #             )
 
             time.sleep(30)  # Wait for 30 seconds before updating
-
             st.rerun()  # Rerun the script to update data
+
 
 if __name__ == "__main__":
     main()
