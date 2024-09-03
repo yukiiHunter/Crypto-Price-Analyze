@@ -340,8 +340,8 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
             name=f'{symbol1}',
             marker_color=color1,
             text=[f'{percentage_changes[symbol1][-1]:.4f}%'],
-            textposition='outside',
-            textfont=dict(size=25)
+            textposition='inside',
+            textfont=dict(size=40)  # Increased font size for percentage text
         ))
 
         fig.add_trace(go.Bar(
@@ -350,8 +350,8 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
             name=f'{symbol2}',
             marker_color=color2,
             text=[f'{percentage_changes[symbol2][-1]:.4f}%'],
-            textposition='outside',
-            textfont=dict(size=25)
+            textposition='inside',
+            textfont=dict(size=40)  # Increased font size for percentage text
         ))
 
         interval_positions[interval] = current_position
@@ -381,7 +381,7 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
             y=y_max,
             text=interval,
             showarrow=False,
-            font=dict(size=16, color='white'),
+            font=dict(size=20, color='white'),
             xanchor='center',
             yanchor='bottom',  # Anchor the text to the bottom of the annotation
         ))
