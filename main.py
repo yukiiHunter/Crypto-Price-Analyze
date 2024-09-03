@@ -136,8 +136,6 @@ def log_low_percentage_changes(direction_comparison, filename='logData.csv', thr
                     writer.writerow([interval, direction, percentage_change, ', '.join(symbols)])
 
 def plot_direction_comparison_chart(direction_comparison, title):
-    import plotly.graph_objects as go
-
     fig = go.Figure()
 
     intervals = ['1m', '5m', '15m', '30m', '1h']
@@ -178,7 +176,12 @@ def plot_direction_comparison_chart(direction_comparison, title):
         xaxis=dict(
             tickvals=[i + 1 for i in interval_positions.values()],
             ticktext=intervals,
-            title='Interval'
+            title_font=dict(size=18),  # Increase font size for x-axis title
+            tickfont=dict(size=20),  # Increase font size for x-axis ticks
+        ),
+        yaxis=dict(
+            title_font=dict(size=18),  # Increase font size for y-axis title
+            tickfont=dict(size=20),  # Increase font size for y-axis ticks
         ),
         xaxis_rangeslider_visible=False,
         barmode='relative',
@@ -193,7 +196,7 @@ def plot_direction_comparison_chart(direction_comparison, title):
             b=150  # Increased bottom margin to accommodate vertical text labels
         ),
         showlegend=False,
-        shapes=shapes
+        shapes=shapes,
     )
 
     fig.update_traces(
@@ -310,7 +313,6 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
     current_position = 0
 
     percentage_changes = {symbol1: [], symbol2: []}
-    log_entries = []
 
     for interval in intervals:
         for symbol in [symbol1, symbol2]:
@@ -355,10 +357,6 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
         interval_positions[interval] = current_position
         current_position += 2
 
-        # Detect and log deviations only for specific intervals
-        # if interval in ['15m', '30m', '1h', '4h', '8h', '1d']:
-        #     detect_and_log_deviation(datetime.datetime.now(), symbol1, percentage_changes[symbol1][-1], symbol2, percentage_changes[symbol2][-1], interval, log_entries)
-
     all_changes = percentage_changes[symbol1] + percentage_changes[symbol2]
     y_max = max(all_changes, default=0) * 1.1
     y_min = min(all_changes, default=0) * 1.1
@@ -375,24 +373,26 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
             line=dict(color='red', width=2, dash='dash')
         ))
 
-    interval_labels = [f'{interval}' for interval in intervals]
+    # Add interval labels as annotations at the top of the graph
     annotations = []
-    for i, (interval, position) in enumerate(interval_positions.items()):
+    for interval, position in interval_positions.items():
         annotations.append(dict(
             x=position + 0.5,
             y=y_max,
-            text=interval_labels[i],
+            text=interval,
             showarrow=False,
             font=dict(size=16, color='white'),
-            xanchor='center'
+            xanchor='center',
+            yanchor='bottom',  # Anchor the text to the bottom of the annotation
         ))
 
     fig.update_layout(
         title=title,
-        xaxis_title='Interval',
+        xaxis=dict(
+            showticklabels=False  # Hide the default x-axis labels
+        ),
         yaxis_title='Percentage Change (Open - Close) (%)',  # Adjusted axis title
         barmode='group',
-        xaxis_tickangle=-90,
         xaxis_rangeslider_visible=False,
         template='plotly_dark',
         autosize=True,
@@ -401,8 +401,8 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
         margin=go.layout.Margin(
             l=100,
             r=100,
-            t=100,
-            b=150
+            t=150,  # Increased top margin to accommodate the interval labels
+            b=100
         ),
         showlegend=False,
         shapes=shapes,
@@ -410,11 +410,8 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
         yaxis=dict(range=[y_min, y_max])
     )
 
-    # Save log entries to CSV file
-    # if log_entries:
-    #     save_logs(log_entries)
-
     return fig
+
     
 # def plot_minute_by_minute_chart(symbols, title):
 #     fig = go.Figure()
@@ -488,39 +485,35 @@ def calculate_percentage_change(symbol, interval='1m'):
     return total_percentage_change / total_data_points if total_data_points > 0 else 0
 
 def plot_combined_percentage_chart(selected_symbols, title):
-    # Retrieve or initialize previous data points
     if 'time_series_data' not in st.session_state:
         st.session_state.time_series_data = []
 
-    # Calculate the average percentage change across all selected symbols
     avg_percentage_change = 0
     if selected_symbols:
         avg_percentage_change = sum(calculate_percentage_change(symbol) for symbol in selected_symbols) / len(selected_symbols)
 
-    # Append the new data point (timestamp and average percentage change)
     st.session_state.time_series_data.append({
         'Time': datetime.datetime.now(),
         'Average Percentage Change': avg_percentage_change
     })
 
-    # Convert to DataFrame for plotting
     df = pd.DataFrame(st.session_state.time_series_data)
 
-    # Plot the graph with line + markers
     fig = go.Figure()
 
     fig.add_trace(go.Scatter(
         x=df['Time'],
         y=df['Average Percentage Change'],
-        mode='lines+markers',
+        mode='lines+markers+text',
         name='Average Change',
-        line=dict(color='blue')
+        line=dict(color='blue'),
+        text=[f"{pct:.2f}%" for pct in df['Average Percentage Change']],
+        textposition='top center'
     ))
 
-    # Update layout
     fig.update_layout(
         title=title,
-        xaxis_title='Time',
+        xaxis_title='Time (Interval)',
         yaxis_title='Average Percentage Change (%)',
         template='plotly_dark',
         autosize=True,
@@ -531,7 +524,20 @@ def plot_combined_percentage_chart(selected_symbols, title):
             r=100,
             t=100,
             b=100
-        )
+        ),
+        font=dict(
+            size=24  # General font size for the chart
+        ),
+        xaxis=dict(
+            tickvals=df['Time'],
+            ticktext=df['Time'].dt.strftime('%H:%M:%S'),
+            title_font=dict(size=18),  # Increase font size for x-axis title
+            tickfont=dict(size=20),  # Increase font size for x-axis ticks
+        ),
+        yaxis=dict(
+            title_font=dict(size=18),  # Increase font size for y-axis title
+            tickfont=dict(size=20),  # Increase font size for y-axis ticks
+        ),
     )
 
     return fig
@@ -596,8 +602,6 @@ def main():
             avg_changes_df = pd.DataFrame(avg_changes)
 
             if len(selected_symbols) > 1:
-                fig_comparison = plot_comparison_chart(avg_changes_df, "Average Price Change (%) by Interval and Symbol")
-                st.plotly_chart(fig_comparison, use_container_width=True)
                 
                 direction_comparison = calculate_direction_comparison(avg_changes_df, intervals)
                 fig_direction_comparison = plot_direction_comparison_chart(direction_comparison, "Direction Comparison (%) of Selected Coins")
@@ -607,6 +611,9 @@ def main():
 
                 fig_combined = plot_combined_percentage_chart(selected_symbols, "Combined Average Percentage Change for Selected Coins")
                 st.plotly_chart(fig_combined, use_container_width=True)
+
+                fig_comparison = plot_comparison_chart(avg_changes_df, "Average Price Change (%) by Interval and Symbol")
+                st.plotly_chart(fig_comparison, use_container_width=True)
 
             time.sleep(30)  # Wait for 30 seconds before updating
             st.rerun()  # Rerun the script to update data
