@@ -389,7 +389,9 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
     fig.update_layout(
         title=title,
         xaxis=dict(
-            showticklabels=False  # Hide the default x-axis labels
+            showticklabels=False,  # Hide the default x-axis labels
+            title_font=dict(size=18),  # Increase font size for x-axis title
+            tickfont=dict(size=20),  # Increase font size for x-axis ticks
         ),
         yaxis_title='Percentage Change (Open - Close) (%)',  # Adjusted axis title
         barmode='group',
@@ -407,8 +409,14 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
         showlegend=False,
         shapes=shapes,
         annotations=annotations,
-        yaxis=dict(range=[y_min, y_max])
+        yaxis=dict(
+            range=[y_min, y_max],
+            title_font=dict(size=18),  # Increase font size for x-axis title
+            tickfont=dict(size=20),  # Increase font size for x-axis ticks
+        )
     )
+
+    fig.update_yaxes(autorange=True)
 
     return fig
 
@@ -507,7 +515,7 @@ def plot_combined_percentage_chart(selected_symbols, title):
         mode='lines+markers+text',
         name='Average Change',
         line=dict(color='blue'),
-        text=[f"{pct:.2f}%" for pct in df['Average Percentage Change']],
+        text=[f"{pct:.4f}%" for pct in df['Average Percentage Change']],
         textposition='top center'
     ))
 
@@ -539,6 +547,8 @@ def plot_combined_percentage_chart(selected_symbols, title):
             tickfont=dict(size=20),  # Increase font size for y-axis ticks
         ),
     )
+
+    fig.update_yaxes(autorange=True)
 
     return fig
 
