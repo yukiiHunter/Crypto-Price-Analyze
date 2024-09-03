@@ -572,7 +572,81 @@ def plot_combined_percentage_chart1(selected_symbols, title):
 
     avg_percentage_change = 0
     if selected_symbols:
-        avg_percentage_change = sum(calculate_percentage_change(symbol) for symbol in selected_symbols) / len(selected_symbols)
+        avg_percentage_change = sum(calculate_percentage_change1(symbol) for symbol in selected_symbols) / len(selected_symbols)
+
+    st.session_state.time_series_data.append({
+        'Time': datetime.datetime.now(),
+        'Average Percentage Change': avg_percentage_change
+    })
+
+    df = pd.DataFrame(st.session_state.time_series_data)
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(
+        x=df['Time'],
+        y=df['Average Percentage Change'],
+        mode='lines+markers+text',
+        name='Average Change',
+        line=dict(color='blue'),
+        text=[f"{pct:.4f}%" for pct in df['Average Percentage Change']],
+        textposition='top center'
+    ))
+
+    fig.update_layout(
+        title=title,
+        xaxis_title='Time (Interval)',
+        yaxis_title='Average Percentage Change (%)',
+        template='plotly_dark',
+        autosize=True,
+        height=600,
+        width=1200,
+        margin=go.layout.Margin(
+            l=100,
+            r=100,
+            t=100,
+            b=100
+        ),
+        font=dict(
+            size=24  # General font size for the chart
+        ),
+        xaxis=dict(
+            tickvals=df['Time'],
+            ticktext=df['Time'].dt.strftime('%H:%M:%S'),
+            title_font=dict(size=18),  # Increase font size for x-axis title
+            tickfont=dict(size=20),  # Increase font size for x-axis ticks
+        ),
+        yaxis=dict(
+            title_font=dict(size=18),  # Increase font size for y-axis title
+            tickfont=dict(size=20),  # Increase font size for y-axis ticks
+        ),
+    )
+
+    fig.update_yaxes(autorange=True)
+
+    return fig
+
+def calculate_percentage_change2(symbol, interval='15m'):
+    candles = client.get_klines(symbol=symbol, interval=interval)
+    total_percentage_change = 0
+    total_data_points = 0
+
+    for candle in candles:
+        open_price = float(candle[1])
+        close_price = float(candle[4])
+        percentage_change = ((close_price - open_price) / open_price) * 100
+        total_percentage_change += percentage_change
+        total_data_points += 1
+
+    return total_percentage_change / total_data_points if total_data_points > 0 else 0
+
+def plot_combined_percentage_chart2(selected_symbols, title):
+    if 'time_series_data' not in st.session_state:
+        st.session_state.time_series_data = []
+
+    avg_percentage_change = 0
+    if selected_symbols:
+        avg_percentage_change = sum(calculate_percentage_change2(symbol) for symbol in selected_symbols) / len(selected_symbols)
 
     st.session_state.time_series_data.append({
         'Time': datetime.datetime.now(),
@@ -693,8 +767,8 @@ def main():
                 
                 avg_changes_df = pd.DataFrame(avg_changes)
 
-                fig_combined = plot_combined_percentage_chart(selected_symbols, "Combined Average Percentage Change for Selected Coins")
-                st.plotly_chart(fig_combined, use_container_width=True)
+                fig_combined2 = plot_combined_percentage_chart2(selected_symbols, "Combined Average Percentage Change for Selected Coins")
+                st.plotly_chart(fig_combined2, use_container_width=True)
 
                 # fig_combined1 = plot_combined_percentage_chart1(selected_symbols, "Combined Average Percentage Change for Selected Coins 5m")
                 # st.plotly_chart(fig_combined1, use_container_width=True)
@@ -764,8 +838,8 @@ def main():
                 
                 avg_changes_df = pd.DataFrame(avg_changes)
 
-                fig_combined = plot_combined_percentage_chart(selected_symbols, "Combined Average Percentage Change for Selected Coins")
-                st.plotly_chart(fig_combined, use_container_width=True)
+                fig_combined1 = plot_combined_percentage_chart1(selected_symbols, "Combined Average Percentage Change for Selected Coins")
+                st.plotly_chart(fig_combined1, use_container_width=True)
 
                 # fig_combined1 = plot_combined_percentage_chart1(selected_symbols, "Combined Average Percentage Change for Selected Coins 5m")
                 # st.plotly_chart(fig_combined1, use_container_width=True)
