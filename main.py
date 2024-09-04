@@ -4,8 +4,8 @@ import datetime
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import threading
 import time
-import csv
 
 api_key = 'LOtOYSRqlH3lnIfxQSGldXsgMJMTK6VUFxh9tPMnWAQ71OYX5cLZXidCgRIU6RVQ'
 api_secret = 'QTINJGoWZO8VEUQ1F5K0afngYDqArWyuU2w3ur4jsVhBmGr5yAF93xcHtAc43bcl'
@@ -509,6 +509,7 @@ def plot_combined_percentage_chart(selected_symbols, title):
 
     fig = go.Figure()
 
+    # Tambahkan trace untuk perubahan persentase rata-rata
     fig.add_trace(go.Scatter(
         x=df['Time'],
         y=df['Average Percentage Change'],
@@ -519,6 +520,19 @@ def plot_combined_percentage_chart(selected_symbols, title):
         textposition='top center'
     ))
 
+    # Tambahkan garis horizontal pada y=0
+    fig.add_shape(
+        type='line',
+        x0=df['Time'].min(),
+        x1=df['Time'].max(),
+        y0=0,
+        y1=0,
+        line=dict(color='red', width=2),
+        xref='x',
+        yref='y'
+    )
+
+    # Perbarui layout grafik
     fig.update_layout(
         title=title,
         xaxis_title='Time (Interval)',
@@ -534,20 +548,21 @@ def plot_combined_percentage_chart(selected_symbols, title):
             b=100
         ),
         font=dict(
-            size=24  # General font size for the chart
+            size=24  # Ukuran font umum untuk grafik
         ),
         xaxis=dict(
             tickvals=df['Time'],
             ticktext=df['Time'].dt.strftime('%H:%M:%S'),
-            title_font=dict(size=18),  # Increase font size for x-axis title
-            tickfont=dict(size=20),  # Increase font size for x-axis ticks
+            title_font=dict(size=18),  # Tingkatkan ukuran font untuk judul sumbu x
+            tickfont=dict(size=20),  # Tingkatkan ukuran font untuk tick sumbu x
         ),
         yaxis=dict(
-            title_font=dict(size=18),  # Increase font size for y-axis title
-            tickfont=dict(size=20),  # Increase font size for y-axis ticks
+            title_font=dict(size=18),  # Tingkatkan ukuran font untuk judul sumbu y
+            tickfont=dict(size=20),  # Tingkatkan ukuran font untuk tick sumbu y
         ),
     )
 
+    # Atur sumbu y untuk menyesuaikan secara otomatis
     fig.update_yaxes(autorange=True)
 
     return fig
