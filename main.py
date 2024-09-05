@@ -24,9 +24,9 @@ def get_available_symbols():
     symbols = [ticker['symbol'] for ticker in tickers if ticker['symbol'].endswith('USDT')]
     return symbols
     
-def calculate_price_change(df):
+def calculate_price_change(df, num_coins):
     df['Price Change'] = df['Close'] - df['Open']
-    df['Price Change (%)'] = df['Price Change'] / df['Open'] * 100
+    df['Price Change (%)'] = (df['Price Change'] / df['Open'] * 100) / num_coins
     df['Color'] = df['Price Change'].apply(lambda x: 'green' if x >= 0 else 'red')
     return df
 
@@ -753,6 +753,7 @@ def main():
             return
 
         intervals = ['1m', '5m', '15m', '30m', '1h']
+        num_coins = len(selected_symbols)
 
         while True:
             avg_changes = []
@@ -770,7 +771,7 @@ def main():
                         data.append([open_time, open_price, high_price, low_price, close_price])
                     
                     df = pd.DataFrame(data, columns=['Time', 'Open', 'High', 'Low', 'Close'])
-                    df = calculate_price_change(df)
+                    df = calculate_price_change(df, num_coins)
                     
                     avg_change = df['Price Change (%)'].mean()
                     avg_changes.append({'Symbol': symbol, 'Interval': interval, 'Average Change (%)': avg_change})
@@ -828,6 +829,7 @@ def main():
             return
 
         intervals = ['1m', '5m', '15m', '30m', '1h']
+        num_coins = len(selected_symbols)
 
         while True:
             avg_changes = []
@@ -845,7 +847,7 @@ def main():
                         data.append([open_time, open_price, high_price, low_price, close_price])
                     
                     df = pd.DataFrame(data, columns=['Time', 'Open', 'High', 'Low', 'Close'])
-                    df = calculate_price_change(df)
+                    df = calculate_price_change(df, num_coins)
                     
                     avg_change = df['Price Change (%)'].mean()
                     avg_changes.append({'Symbol': symbol, 'Interval': interval, 'Average Change (%)': avg_change})
