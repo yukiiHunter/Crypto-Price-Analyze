@@ -518,7 +518,7 @@ def plot_combined_percentage_chart(selected_symbols, title):
         mode='lines+markers+text',
         name='Average Change',
         line=dict(color='blue'),
-        text=[f"{pct:.4f}%" for pct in df['Average Percentage Change']],
+        text=[f"" for pct in df['Average Percentage Change']],
         textposition='top center'
     ))
 
@@ -797,75 +797,8 @@ def main():
             st.rerun()  # Rerun the script to update data
 
     elif selection == "log 5 menit":
-        st.title("Cryptocurrency Price Analysis")
-
-        symbols = get_available_symbols()
-
-        # selected_symbols = st.multiselect(
-        #     "Select up to 20 symbols", 
-        #     options=symbols,
-        #     max_selections=20,
-        #     default=st.session_state.selected_symbols
-        # )
-
-        selected_symbols = st.multiselect(
-            'Select coins to compare:', 
-            options=get_available_symbols(), 
-            max_selections=20,
-            default=default_symbols
-        )
-
-        if selected_symbols != st.session_state.selected_symbols:
-            st.session_state.selected_symbols = selected_symbols
-
-        if len(selected_symbols) < 2:
-            st.error("Please select at least 2 symbols to compare.")
-            return
-
-        intervals = ['1m', '5m', '15m', '30m', '1h']
-
-        while True:
-            avg_changes = []
-
-            for symbol in selected_symbols:
-                for interval in intervals:
-                    candles = client.get_klines(symbol=symbol, interval=interval)
-                    data = []
-                    for candle in candles:
-                        open_time = datetime.datetime.fromtimestamp(candle[0] / 1000)
-                        open_price = float(candle[1])
-                        high_price = float(candle[2])
-                        low_price = float(candle[3])
-                        close_price = float(candle[4])
-                        data.append([open_time, open_price, high_price, low_price, close_price])
-                    
-                    df = pd.DataFrame(data, columns=['Time', 'Open', 'High', 'Low', 'Close'])
-                    df = calculate_price_change(df)
-                    
-                    avg_change = df['Price Change (%)'].mean()
-                    avg_changes.append({'Symbol': symbol, 'Interval': interval, 'Average Change (%)': avg_change})
-
-            avg_changes_df = pd.DataFrame(avg_changes)
-
-            if len(selected_symbols) > 1:
-                
-                direction_comparison = calculate_direction_comparison(avg_changes_df, intervals)
-                fig_direction_comparison = plot_direction_comparison_chart(direction_comparison, "Direction Comparison (%) of Selected Coins")
-                # st.plotly_chart(fig_direction_comparison, use_container_width=True)
-                
-                avg_changes_df = pd.DataFrame(avg_changes)
-
-                fig_combined1 = plot_combined_percentage_chart1(selected_symbols, "Combined Average Percentage Change for Selected Coins")
-                st.plotly_chart(fig_combined1, use_container_width=True)
-
-                # fig_combined1 = plot_combined_percentage_chart1(selected_symbols, "Combined Average Percentage Change for Selected Coins 5m")
-                # st.plotly_chart(fig_combined1, use_container_width=True)
-
-                # fig_comparison = plot_comparison_chart(avg_changes_df, "Average Price Change (%) by Interval and Symbol")
-                # st.plotly_chart(fig_comparison, use_container_width=True)
-
-            time.sleep(300)  # Wait for 30 seconds before updating
-            st.rerun()  # Rerun the script to update data
+        url = "https://cryptoanalyzelog5.streamlit.app/"
+        st.markdown(f'<a href="{url}" target="_blank">Click here to visit Example.com</a>', unsafe_allow_html=True)
 
     if selection == "Compare 20 Coins":
         st.title("Cryptocurrency Price Analysis")
@@ -928,6 +861,9 @@ def main():
 
                 fig_combined = plot_combined_percentage_chart(selected_symbols, "Combined Average Percentage Change for Selected Coins")
                 st.plotly_chart(fig_combined, use_container_width=True)
+
+                url = "https://cryptoanalyzelog5.streamlit.app/"
+                st.markdown(f'<a href="{url}" target="_self">Log 5 Minutes</a>', unsafe_allow_html=True)
 
                 fig_comparison = plot_comparison_chart(avg_changes_df, "Average Price Change (%) by Interval and Symbol")
                 st.plotly_chart(fig_comparison, use_container_width=True)

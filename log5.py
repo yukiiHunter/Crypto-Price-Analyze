@@ -720,7 +720,7 @@ def plot_combined_percentage_chart2(selected_symbols, title):
 def main():
     # load_logs()
     st.sidebar.title("Navigation")
-    selection = st.sidebar.radio("Go to", ["Log 5 Minutes", "Compare BTCUSDT and BCHUSDT"])
+    selection = st.sidebar.radio("Go to", ["Log 5 Minutes"])
 
     if 'selected_symbols' not in st.session_state:
         st.session_state.selected_symbols = []
@@ -786,6 +786,9 @@ def main():
 
                 fig_combined = plot_combined_percentage_chart(selected_symbols, "Combined Average Percentage Change for Selected Coins")
                 st.plotly_chart(fig_combined, use_container_width=True)
+
+                url = "https://cryptoanalyze.streamlit.app/"
+                st.markdown(f'<a href="{url}" target="_self">Log 1 Minutes</a>', unsafe_allow_html=True)
 
                 fig_comparison = plot_comparison_chart(avg_changes_df, "Average Price Change (%) by Interval and Symbol")
                 # st.plotly_chart(fig_comparison, use_container_width=True)
