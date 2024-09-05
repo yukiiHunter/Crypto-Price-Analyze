@@ -829,6 +829,7 @@ def main():
             return
 
         intervals = ['1m', '5m', '15m', '30m', '1h']
+        num_coins = len(selected_symbols)
 
         while True:
             avg_changes = []
@@ -846,7 +847,7 @@ def main():
                         data.append([open_time, open_price, high_price, low_price, close_price])
                     
                     df = pd.DataFrame(data, columns=['Time', 'Open', 'High', 'Low', 'Close'])
-                    df = calculate_price_change(df)
+                    df = calculate_price_change(df, num_coins)
                     
                     avg_change = df['Price Change (%)'].mean()
                     avg_changes.append({'Symbol': symbol, 'Interval': interval, 'Average Change (%)': avg_change})
