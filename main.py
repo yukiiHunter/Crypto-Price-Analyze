@@ -2,6 +2,7 @@ import os
 from binance.client import Client
 import datetime
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import plotly.graph_objects as go
 import threading
@@ -720,7 +721,7 @@ def plot_combined_percentage_chart2(selected_symbols, title):
 def main():
     # load_logs()
     st.sidebar.title("Navigation")
-    selection = st.sidebar.radio("Go to", ["Compare 20 Coins", "Compare BTCUSDT and BCHUSDT"])
+    selection = st.sidebar.radio("Go to", ["Compare 20 Coins", "Compare BTCUSDT and BCHUSDT"], captions = ["[Log 5 minutes](https://cryptoanalyzelog5.streamlit.app/) | [Log 15 minutes](https://cryptoanalyzelog15.streamlit.app/)",""])
 
     if 'selected_symbols' not in st.session_state:
         st.session_state.selected_symbols = []
