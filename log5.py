@@ -569,6 +569,94 @@ def plot_combined_percentage_chart(selected_symbols, title):
 
     return fig
 
+def plot_combined_percentage_chart_BAR(selected_symbols, title):
+    if not selected_symbols:
+        st.error("Please select at least one symbol.")
+        return
+
+    # Initialize time_series_data if it doesn't exist
+    if 'time_series_data' not in st.session_state:
+        st.session_state.time_series_data = []
+
+    intervals = ['1m', '5m', '15m', '30m', '1h']
+    interval_labels = ['1 min', '5 min', '15 min', '30 min', '1 hour']
+    avg_percentage_changes = []
+
+    for interval in intervals:
+        avg_percentage_change = 0
+        if selected_symbols:
+            avg_percentage_change = sum(calculate_percentage_change(symbol, interval) for symbol in selected_symbols) / len(selected_symbols)
+        avg_percentage_changes.append(avg_percentage_change)
+
+    # Store the time of the data collection for display purposes
+    st.session_state.time_series_data.append({
+        'Time': datetime.datetime.now(),
+        'Average Percentage Change': avg_percentage_changes
+    })
+
+    # Prepare the data for plotting
+    df = pd.DataFrame({
+        'Interval': interval_labels,
+        'Average Percentage Change': avg_percentage_changes
+    })
+
+    # Create a bar chart using Plotly
+    fig = go.Figure()
+
+    fig.add_trace(go.Bar(
+        x=df['Interval'],
+        y=df['Average Percentage Change'],
+        name='Average Change',
+        marker_color='blue',
+        text=[f"{pct:.4f}%" for pct in df['Average Percentage Change']],
+        textposition='outside'
+    ))
+
+    # Add a horizontal line at y=0
+    fig.add_shape(
+        type='line',
+        x0=-0.5,  # Start just before the first bar
+        x1=len(intervals) - 0.5,  # End just after the last bar
+        y0=0,
+        y1=0,
+        line=dict(color='red', width=2),
+        xref='x',
+        yref='y'
+    )
+
+    # Update chart layout
+    fig.update_layout(
+        title=title,
+        xaxis_title='Interval',
+        yaxis_title='Average Percentage Change (%)',
+        template='plotly_dark',
+        autosize=True,
+        height=600,
+        width=1200,
+        margin=go.layout.Margin(
+            l=100,
+            r=100,
+            t=100,
+            b=100
+        ),
+        font=dict(
+            size=24  # Font size for the chart
+        ),
+        xaxis=dict(
+            title_font=dict(size=18),  # Font size for x-axis title
+            tickfont=dict(size=20),  # Font size for x-axis ticks
+        ),
+        yaxis=dict(
+            title_font=dict(size=18),  # Font size for y-axis title
+            tickfont=dict(size=20),  # Font size for y-axis ticks
+        ),
+    )
+
+    # Auto-adjust the y-axis range
+    fig.update_yaxes(autorange=True)
+
+    return fig
+
 def calculate_percentage_change1(symbol, interval='5m'):
     candles = client.get_klines(symbol=symbol, interval=interval)
     total_percentage_change = 0
@@ -782,6 +870,8 @@ def main():
                 direction_comparison = calculate_direction_comparison(avg_changes_df, intervals)
                 fig_direction_comparison = plot_direction_comparison_chart(direction_comparison, "Direction Comparison (%) of Selected Coins")
                 # st.plotly_chart(fig_direction_comparison, use_container_width=True)
+                fig_combined1 = plot_combined_percentage_chart_BAR(selected_symbols, "Combined Average Percentage Change for Selected Coins")
+                st.plotly_chart(fig_combined1, use_container_width=True)
                 
                 avg_changes_df = pd.DataFrame(avg_changes)
 
