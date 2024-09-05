@@ -479,18 +479,20 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
 #     return fig
 
 def calculate_percentage_change(symbol, interval='1m'):
+    # Retrieve the latest candles (price data) for the symbol
     candles = client.get_klines(symbol=symbol, interval=interval)
-    total_percentage_change = 0
-    total_data_points = 0
 
+    percentage_changes = []
+
+    # Calculate the percentage change for each interval (each candle)
     for candle in candles:
         open_price = float(candle[1])
         close_price = float(candle[4])
         percentage_change = ((close_price - open_price) / open_price) * 100
-        total_percentage_change += percentage_change
-        total_data_points += 1
+        percentage_changes.append(percentage_change)
 
-    return total_percentage_change / total_data_points if total_data_points > 0 else 0
+    # Return only the most recent percentage change for the latest interval
+    return percentage_changes[-1] if percentage_changes else 0
 
 def plot_combined_percentage_chart(selected_symbols, title):
     if 'time_series_data' not in st.session_state:
@@ -718,12 +720,13 @@ def plot_combined_percentage_chart2(selected_symbols, title):
 def main():
     # load_logs()
     st.sidebar.title("Navigation")
-    selection = st.sidebar.radio("Go to", ["Compare 20 Coins", "Compare BTCUSDT and BCHUSDT", "log 5 menit", "log 15 menit"])
+    selection = st.sidebar.radio("Go to", ["Log 5 Minutes", "Compare BTCUSDT and BCHUSDT"])
 
     if 'selected_symbols' not in st.session_state:
         st.session_state.selected_symbols = []
 
-    st.title("Cryptocurrency Price Analysis")
+    if selection == "Log 5 Minutes":
+        st.title("Cryptocurrency Price Analysis")
 
         symbols = get_available_symbols()
 
@@ -781,14 +784,41 @@ def main():
                 
                 avg_changes_df = pd.DataFrame(avg_changes)
 
-                fig_combined1 = plot_combined_percentage_chart1(selected_symbols, "Combined Average Percentage Change for Selected Coins")
-                st.plotly_chart(fig_combined1, use_container_width=True)
+                fig_combined = plot_combined_percentage_chart(selected_symbols, "Combined Average Percentage Change for Selected Coins")
+                st.plotly_chart(fig_combined, use_container_width=True)
 
-                # fig_combined1 = plot_combined_percentage_chart1(selected_symbols, "Combined Average Percentage Change for Selected Coins 5m")
-                # st.plotly_chart(fig_combined1, use_container_width=True)
-
-                # fig_comparison = plot_comparison_chart(avg_changes_df, "Average Price Change (%) by Interval and Symbol")
+                fig_comparison = plot_comparison_chart(avg_changes_df, "Average Price Change (%) by Interval and Symbol")
                 # st.plotly_chart(fig_comparison, use_container_width=True)
+
+            time.sleep(300)  # Wait for 30 seconds before updating
+            st.rerun()  # Rerun the script to update data
+
+    elif selection == "Compare BTCUSDT and BCHUSDT":
+        st.title("Compare BTCUSDT and BCHUSDT")
+
+        intervals = ['1m', '5m', '15m', '30m', '1h', '4h', '8h', '1d']
+
+        log_entries = []  # Initialize log entries list
+
+        while True:
+            fig_comparison = plot_symbol_comparison_chart('BTCUSDT', 'BCHUSDT', intervals, "BTCUSDT vs BCHUSDT Price Change (%)")
+            st.plotly_chart(fig_comparison, use_container_width=True)
+
+            # Display logs in a table
+            # if datetime.datetime.now() - st.session_state.last_log_time >= datetime.timedelta(minutes=15):
+            #     if os.path.exists('logs.csv'):
+            #         logs_df = pd.read_csv('logs.csv', names=['Log'])
+            #         st.write("### Logs")
+            #         st.write(logs_df)
+
+            #         # Provide download link for the CSV file
+            #         with open('logs.csv', 'r') as file:
+            #             st.download_button(
+            #                 label="Download Logs",
+            #                 data=file,
+            #                 file_name='logs.csv',
+            #                 mime='text/csv'
+            #             )
 
             time.sleep(300)  # Wait for 30 seconds before updating
             st.rerun()  # Rerun the script to update data
