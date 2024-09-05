@@ -863,9 +863,6 @@ def main():
                 fig_combined = plot_combined_percentage_chart(selected_symbols, "Combined Average Percentage Change for Selected Coins")
                 st.plotly_chart(fig_combined, use_container_width=True)
 
-                url = "https://cryptoanalyzelog5.streamlit.app/"
-                st.markdown(f'<a href="{url}" target="_blank">Log 5 Minutes</a>', unsafe_allow_html=True)
-
                 fig_comparison = plot_comparison_chart(avg_changes_df, "Average Price Change (%) by Interval and Symbol")
                 st.plotly_chart(fig_comparison, use_container_width=True)
 
