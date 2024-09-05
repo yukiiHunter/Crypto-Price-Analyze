@@ -720,7 +720,7 @@ def plot_combined_percentage_chart2(selected_symbols, title):
 def main():
     # load_logs()
     st.sidebar.title("Navigation")
-    selection = st.sidebar.radio("Go to", ["Compare 20 Coins", "Compare BTCUSDT and BCHUSDT", "log 5 menit", "log 15 menit"])
+    selection = st.sidebar.radio("Go to", ["Compare 20 Coins", "Compare BTCUSDT and BCHUSDT"])
 
     if 'selected_symbols' not in st.session_state:
         st.session_state.selected_symbols = []
