@@ -720,7 +720,7 @@ def plot_combined_percentage_chart2(selected_symbols, title):
 def main():
     # load_logs()
     st.sidebar.title("Navigation")
-    selection = st.sidebar.radio("Go to", ["Log 5 Minutes"])
+    selection = st.sidebar.radio("Go to", ["Log 5 Minutes"], captions = ["[Log 1 minutes](https://cryptoanalyzelog.streamlit.app/) | [Log 15 minutes](https://cryptoanalyzelog15.streamlit.app/)"])
 
     if 'selected_symbols' not in st.session_state:
         st.session_state.selected_symbols = []
