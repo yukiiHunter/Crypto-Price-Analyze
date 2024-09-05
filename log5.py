@@ -478,7 +478,7 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
     
 #     return fig
 
-def calculate_percentage_change(symbol, interval='1m'):
+def calculate_percentage_change(symbol, interval='5m'):
     # Retrieve the latest candles (price data) for the symbol
     candles = client.get_klines(symbol=symbol, interval=interval)
 
