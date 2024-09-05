@@ -479,18 +479,20 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
 #     return fig
 
 def calculate_percentage_change(symbol, interval='1m'):
+    # Retrieve the latest candles (price data) for the symbol
     candles = client.get_klines(symbol=symbol, interval=interval)
-    total_percentage_change = 0
-    total_data_points = 0
 
+    percentage_changes = []
+
+    # Calculate the percentage change for each interval (each candle)
     for candle in candles:
         open_price = float(candle[1])
         close_price = float(candle[4])
         percentage_change = ((close_price - open_price) / open_price) * 100
-        total_percentage_change += percentage_change
-        total_data_points += 1
+        percentage_changes.append(percentage_change)
 
-    return total_percentage_change / total_data_points if total_data_points > 0 else 0
+    # Return only the most recent percentage change for the latest interval
+    return percentage_changes[-1] if percentage_changes else 0
 
 def plot_combined_percentage_chart(selected_symbols, title):
     if 'time_series_data' not in st.session_state:
