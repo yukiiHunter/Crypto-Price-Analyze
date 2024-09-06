@@ -576,8 +576,8 @@ def plot_combined_percentage_chart_BAR(selected_symbols, title):
         return
 
     # Initialize time_series_data if it doesn't exist
-    if 'time_series_data' not in st.session_state:
-        st.session_state.time_series_data = []
+    if 'time_series_data1' not in st.session_state:
+        st.session_state.time_series_data1 = []
 
     intervals = ['1m', '5m', '15m', '30m', '1h']
     interval_labels = ['1 min', '5 min', '15 min', '30 min', '1 hour']
@@ -590,7 +590,7 @@ def plot_combined_percentage_chart_BAR(selected_symbols, title):
         avg_percentage_changes.append(avg_percentage_change)
 
     # Store the time of the data collection for display purposes
-    st.session_state.time_series_data.append({
+    st.session_state.time_series_data1.append({
         'Time': datetime.datetime.now(),
         'Average Percentage Change': avg_percentage_changes
     })
@@ -944,16 +944,17 @@ def main():
 
             if len(selected_symbols) > 1:
                 
-                direction_comparison = calculate_direction_comparison(avg_changes_df, intervals)
-                fig_direction_comparison = plot_direction_comparison_chart(direction_comparison, "Direction Comparison (%) of Selected Coins")
-                # st.plotly_chart(fig_direction_comparison, use_container_width=True)
-                fig_combined1 = plot_combined_percentage_chart_BAR(selected_symbols, "Combined Average Percentage Change for Selected Coins")
-                st.plotly_chart(fig_combined1, use_container_width=True)
+                # direction_comparison = calculate_direction_comparison(avg_changes_df, intervals)
+                # fig_direction_comparison = plot_direction_comparison_chart(direction_comparison, "Direction Comparison (%) of Selected Coins")
+                # # st.plotly_chart(fig_direction_comparison, use_container_width=True)
                 
                 avg_changes_df = pd.DataFrame(avg_changes)
 
-                fig_combined = plot_combined_percentage_chart(selected_symbols, "Combined Average Percentage Change for Selected Coins")
+                fig_combined = plot_combined_percentage_chart(selected_symbols, "Line Combined Average Percentage Change for Selected Coins")
                 st.plotly_chart(fig_combined, use_container_width=True)
+
+                fig_combined1 = plot_combined_percentage_chart_BAR(selected_symbols, "Bar Combined Average Percentage Change for Selected Coins")
+                st.plotly_chart(fig_combined1, use_container_width=True)
 
                 fig_comparison = plot_comparison_chart(avg_changes_df, "Average Price Change (%) by Interval and Symbol")
                 st.plotly_chart(fig_comparison, use_container_width=True)
