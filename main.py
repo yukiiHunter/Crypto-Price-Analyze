@@ -503,16 +503,21 @@ def plot_combined_percentage_chart(selected_symbols, title):
     if selected_symbols:
         avg_percentage_change = sum(calculate_percentage_change(symbol) for symbol in selected_symbols) / len(selected_symbols)
 
+    # Append new data
     st.session_state.time_series_data.append({
         'Time': datetime.datetime.now(),
         'Average Percentage Change': avg_percentage_change
     })
 
+    # Keep only the latest 60 entries
+    if len(st.session_state.time_series_data) > 60:
+        st.session_state.time_series_data = st.session_state.time_series_data[-60:]
+
     df = pd.DataFrame(st.session_state.time_series_data)
 
     fig = go.Figure()
 
-    # Tambahkan trace untuk perubahan persentase rata-rata
+    # Add trace for average percentage change
     fig.add_trace(go.Scatter(
         x=df['Time'],
         y=df['Average Percentage Change'],
@@ -523,7 +528,7 @@ def plot_combined_percentage_chart(selected_symbols, title):
         textposition='top center'
     ))
 
-    # Tambahkan garis horizontal pada y=0
+    # Add horizontal line at y=0
     fig.add_shape(
         type='line',
         x0=df['Time'].min(),
@@ -535,7 +540,7 @@ def plot_combined_percentage_chart(selected_symbols, title):
         yref='y'
     )
 
-    # Perbarui layout grafik
+    # Update layout
     fig.update_layout(
         title=title,
         xaxis_title='Time (Interval)',
@@ -551,24 +556,25 @@ def plot_combined_percentage_chart(selected_symbols, title):
             b=100
         ),
         font=dict(
-            size=24  # Ukuran font umum untuk grafik
+            size=24  # Font size for the chart
         ),
         xaxis=dict(
             tickvals=df['Time'],
             ticktext=df['Time'].dt.strftime('%H:%M:%S'),
-            title_font=dict(size=18),  # Tingkatkan ukuran font untuk judul sumbu x
-            tickfont=dict(size=20),  # Tingkatkan ukuran font untuk tick sumbu x
+            title_font=dict(size=18),  # Font size for x-axis title
+            tickfont=dict(size=20),  # Font size for x-axis ticks
         ),
         yaxis=dict(
-            title_font=dict(size=18),  # Tingkatkan ukuran font untuk judul sumbu y
-            tickfont=dict(size=20),  # Tingkatkan ukuran font untuk tick sumbu y
+            title_font=dict(size=18),  # Font size for y-axis title
+            tickfont=dict(size=20),  # Font size for y-axis ticks
         ),
     )
 
-    # Atur sumbu y untuk menyesuaikan secara otomatis
+    # Auto-adjust the y-axis range
     fig.update_yaxes(autorange=True)
 
     return fig
+
 
 def plot_combined_percentage_chart_BAR(selected_symbols, title):
     if not selected_symbols:
