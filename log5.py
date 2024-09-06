@@ -575,8 +575,8 @@ def plot_combined_percentage_chart_BAR(selected_symbols, title):
         return
 
     # Initialize time_series_data if it doesn't exist
-    if 'time_series_data' not in st.session_state:
-        st.session_state.time_series_data = []
+    if 'time_series_data1' not in st.session_state:
+        st.session_state.time_series_data1 = []
 
     intervals = ['1m', '5m', '15m', '30m', '1h']
     interval_labels = ['1 min', '5 min', '15 min', '30 min', '1 hour']
@@ -589,7 +589,7 @@ def plot_combined_percentage_chart_BAR(selected_symbols, title):
         avg_percentage_changes.append(avg_percentage_change)
 
     # Store the time of the data collection for display purposes
-    st.session_state.time_series_data.append({
+    st.session_state.time_series_data1.append({
         'Time': datetime.datetime.now(),
         'Average Percentage Change': avg_percentage_changes
     })
