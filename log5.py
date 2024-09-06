@@ -870,13 +870,14 @@ def main():
                 direction_comparison = calculate_direction_comparison(avg_changes_df, intervals)
                 fig_direction_comparison = plot_direction_comparison_chart(direction_comparison, "Direction Comparison (%) of Selected Coins")
                 # st.plotly_chart(fig_direction_comparison, use_container_width=True)
-                fig_combined1 = plot_combined_percentage_chart_BAR(selected_symbols, "Combined Average Percentage Change for Selected Coins")
-                st.plotly_chart(fig_combined1, use_container_width=True)
                 
                 avg_changes_df = pd.DataFrame(avg_changes)
 
-                fig_combined = plot_combined_percentage_chart(selected_symbols, "Combined Average Percentage Change for Selected Coins")
+                fig_combined = plot_combined_percentage_chart(selected_symbols, "Line Combined Average Percentage Change for Selected Coins")
                 st.plotly_chart(fig_combined, use_container_width=True)
+
+                fig_combined1 = plot_combined_percentage_chart_BAR(selected_symbols, "Bar Combined Average Percentage Change for Selected Coins")
+                st.plotly_chart(fig_combined1, use_container_width=True)
 
                 fig_comparison = plot_comparison_chart(avg_changes_df, "Average Price Change (%) by Interval and Symbol")
                 # st.plotly_chart(fig_comparison, use_container_width=True)
