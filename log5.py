@@ -508,6 +508,7 @@ def plot_combined_percentage_chart(selected_symbols, title):
         'Average Percentage Change': avg_percentage_change
     })
 
+    #60
     # Keep only the latest 60 entries
     if len(st.session_state.time_series_data) > 60:
         st.session_state.time_series_data = st.session_state.time_series_data[-60:]
