@@ -5,6 +5,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import threading
+import pytz
 import time
 
 api_key = 'LOtOYSRqlH3lnIfxQSGldXsgMJMTK6VUFxh9tPMnWAQ71OYX5cLZXidCgRIU6RVQ'
@@ -502,9 +503,15 @@ def plot_combined_percentage_chart(selected_symbols, title):
     if selected_symbols:
         avg_percentage_change = sum(calculate_percentage_change(symbol) for symbol in selected_symbols) / len(selected_symbols)
 
+    # Define the Asia/Jakarta time zone
+    jakarta_tz = pytz.timezone('Asia/Jakarta')
+
+    # Get current time in Asia/Jakarta time zone
+    current_time = datetime.datetime.now(jakarta_tz)
+    
     # Append new data
     st.session_state.time_series_data.append({
-        'Time': datetime.datetime.now(),
+        'Time': current_time,
         'Average Percentage Change': avg_percentage_change
     })
 
@@ -594,9 +601,15 @@ def plot_combined_percentage_chart_BAR(selected_symbols, title):
             avg_percentage_change = sum(calculate_percentage_change(symbol, interval) for symbol in selected_symbols) / len(selected_symbols)
         avg_percentage_changes.append(avg_percentage_change)
 
+    # Define the Asia/Jakarta time zone
+    jakarta_tz = pytz.timezone('Asia/Jakarta')
+
+    # Get current time in Asia/Jakarta time zone
+    current_time = datetime.datetime.now(jakarta_tz)
+    
     # Store the time of the data collection for display purposes
     st.session_state.time_series_data1.append({
-        'Time': datetime.datetime.now(),
+        'Time': current_time,
         'Average Percentage Change': avg_percentage_changes
     })
 
