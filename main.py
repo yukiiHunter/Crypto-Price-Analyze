@@ -7,6 +7,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import threading
 import time
+import pytz
 
 api_key = 'LOtOYSRqlH3lnIfxQSGldXsgMJMTK6VUFxh9tPMnWAQ71OYX5cLZXidCgRIU6RVQ'
 api_secret = 'QTINJGoWZO8VEUQ1F5K0afngYDqArWyuU2w3ur4jsVhBmGr5yAF93xcHtAc43bcl'
@@ -238,75 +239,6 @@ def plot_direction_comparison_chart(direction_comparison, title):
     fig.update_layout(annotations=annotations)
     return fig
 
-# # Dataframe untuk menyimpan log
-# log_df = pd.DataFrame(columns=["Timestamp", "Interval", "Description"])
-
-# # Initialize the log DataFrame
-# if 'log_df' not in st.session_state:
-#     st.session_state.log_df = pd.DataFrame(columns=['Timestamp', 'Log'])
-
-# def add_log(message, timestamp=None):
-#     if timestamp is None:
-#         timestamp = datetime.datetime.now().strftime("%d %B %Y %H:%M")
-#     new_log = {'Timestamp': timestamp, 'Log': message}
-#     st.session_state.log_df = st.session_state.log_df.append(new_log, ignore_index=True)
-#     st.session_state.log_df['Timestamp'] = pd.to_datetime(st.session_state.log_df['Timestamp'], format="%d %B %Y %H:%M")
-#     st.session_state.log_df = st.session_state.log_df.sort_values(by='Timestamp', ascending=False)
-#     st.session_state.log_df.to_csv('log.csv', index=False)
-
-# def load_logs():
-#     if os.path.exists('log.csv'):
-#         st.session_state.log_df = pd.read_csv('log.csv', parse_dates=['Timestamp'])
-#     else:
-#         st.session_state.log_df = pd.DataFrame(columns=['Timestamp', 'Log'])
-
-# if 'last_log_time' not in st.session_state:
-#     st.session_state.last_log_time = datetime.datetime.now() - datetime.timedelta(minutes=15)
-
-
-# Fungsi untuk mengunduh log sebagai CSV
-# def download_log_csv(log_df):
-#     csv = log_df.to_csv(index=False)
-#     st.download_button(label="Download Log CSV", data=csv, file_name='btc_bch_price_change_log.csv', mime='text/csv')
-
-# def detect_and_log_deviation(timestamp, symbol1, symbol1_change, symbol2, symbol2_change, interval, log_entries):
-#     if (symbol1_change >= 0 and symbol2_change < 0) or (symbol1_change < 0 and symbol2_change >= 0):
-#         log_entry = (f'Penyimpangan pada bar {interval}, {symbol1} {symbol1_change:.2f}% {symbol2} {symbol2_change:.2f}% '
-#                      f'jam {timestamp.strftime("%H:%M")} tanggal {timestamp.strftime("%d %B %Y")}')
-#         log_entries.append(log_entry)
-
-# def save_logs(log_entries):
-#     # Only write logs for specific intervals
-#     valid_intervals = ['15m', '30m', '1h', '4h', '8h', '1d']
-#     filtered_logs = [entry for entry in log_entries if any(interval in entry for interval in valid_intervals)]
-
-#     # Read existing logs from the file if it exists
-#     if os.path.exists('logs.csv'):
-#         with open('logs.csv', mode='r', encoding='utf-8') as file:
-#             existing_logs = file.readlines()
-#     else:
-#         existing_logs = []
-
-#     # Prepend new log entries
-#     with open('logs.csv', mode='w', newline='', encoding='utf-8') as file:
-#         writer = csv.writer(file)
-#         # Write new logs first
-#         for entry in filtered_logs:
-#             writer.writerow([entry])
-#         # Then write existing logs
-#         for log in existing_logs:
-#             file.write(log)
-
-#     # Prepend new log entries
-#     with open('logs.csv', mode='w', newline='', encoding='utf-8') as file:
-#         writer = csv.writer(file)
-#         # Write new logs first
-#         for entry in log_entries:
-#             writer.writerow([entry])
-#         # Then write existing logs
-#         for log in existing_logs:
-#             file.write(log)
-
 def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_period=3):
     fig = go.Figure()
 
@@ -421,64 +353,6 @@ def plot_symbol_comparison_chart(symbol1, symbol2, intervals, title, smoothing_p
 
     return fig
 
-    
-# def plot_minute_by_minute_chart(symbols, title):
-#     fig = go.Figure()
-
-#     # Define the interval to be 1 minute
-#     interval = '1m'
-
-#     percentage_changes = {symbol: [] for symbol in symbols}
-#     timestamps = []
-
-#     for symbol in symbols:
-#         candles = client.get_klines(symbol=symbol, interval=interval)
-#         data = []
-#         for candle in candles:
-#             open_time = datetime.datetime.fromtimestamp(candle[0] / 1000)
-#             open_price = float(candle[1])
-#             close_price = float(candle[4])
-#             # Calculate percentage change as (Close - Open) / Open
-#             percentage_change = ((close_price - open_price) / open_price) * 100
-#             data.append([open_time, percentage_change])
-#             if not timestamps:  # Store timestamps for x-axis only once
-#                 timestamps.append(open_time)
-        
-#         percentage_changes[symbol] = [item[1] for item in data]  # Extract percentage changes
-
-#     # Plot data for each symbol as bars
-#     for symbol in symbols:
-#         fig.add_trace(go.Bar(
-#             x=timestamps,
-#             y=percentage_changes[symbol],
-#             name=f'{symbol}',
-#             marker=dict(
-#                 line=dict(width=4)  # Border width around the bars
-#             ),
-#         ))
-
-#     # Autoscale on Y-axis by removing manual range setting
-#     fig.update_layout(
-#         title=title,
-#         xaxis_title='Time',
-#         yaxis_title='Percentage Change (%)',
-#         template='plotly_dark',
-#         autosize=True,
-#         height=600,
-#         width=1200,
-#         margin=go.layout.Margin(
-#             l=100,
-#             r=100,
-#             t=100,
-#             b=100
-#         ),
-#         barmode='group',  # Group bars for better comparison
-#         bargap=0.15,  # Gap between bars
-#         bargroupgap=0.1  # Gap between groups of bars
-#     )
-    
-#     return fig
-
 def calculate_percentage_change(symbol, interval='1m'):
     # Retrieve the latest candles (price data) for the symbol
     candles = client.get_klines(symbol=symbol, interval=interval)
@@ -499,13 +373,19 @@ def plot_combined_percentage_chart(selected_symbols, title):
     if 'time_series_data' not in st.session_state:
         st.session_state.time_series_data = []
 
+    # Define the Asia/Jakarta time zone
+    jakarta_tz = pytz.timezone('Asia/Jakarta')
+
+    # Get current time in Asia/Jakarta time zone
+    current_time = datetime.datetime.now(jakarta_tz)
+    
     avg_percentage_change = 0
     if selected_symbols:
         avg_percentage_change = sum(calculate_percentage_change(symbol) for symbol in selected_symbols) / len(selected_symbols)
 
     # Append new data
     st.session_state.time_series_data.append({
-        'Time': datetime.datetime.now(),
+        'Time': current_time,
         'Average Percentage Change': avg_percentage_change
     })
 
@@ -514,6 +394,14 @@ def plot_combined_percentage_chart(selected_symbols, title):
         st.session_state.time_series_data = st.session_state.time_series_data[-60:]
 
     df = pd.DataFrame(st.session_state.time_series_data)
+
+    # Check if the 'Time' column is timezone-aware
+    if df['Time'].dt.tz is None:
+        # If not timezone-aware, localize to 'Asia/Jakarta'
+        df['Time'] = df['Time'].dt.tz_localize(jakarta_tz)
+    else:
+        # If already timezone-aware, convert to 'Asia/Jakarta'
+        df['Time'] = df['Time'].dt.tz_convert(jakarta_tz)
 
     fig = go.Figure()
 
@@ -524,7 +412,7 @@ def plot_combined_percentage_chart(selected_symbols, title):
         mode='lines+markers+text',
         name='Average Change',
         line=dict(color='blue'),
-        text=[f"" for pct in df['Average Percentage Change']],
+        text=[f"{pct:.2f}%" for pct in df['Average Percentage Change']],
         textposition='top center'
     ))
 
@@ -575,7 +463,6 @@ def plot_combined_percentage_chart(selected_symbols, title):
 
     return fig
 
-
 def plot_combined_percentage_chart_BAR(selected_symbols, title):
     if not selected_symbols:
         st.error("Please select at least one symbol.")
@@ -594,10 +481,15 @@ def plot_combined_percentage_chart_BAR(selected_symbols, title):
         if selected_symbols:
             avg_percentage_change = sum(calculate_percentage_change(symbol, interval) for symbol in selected_symbols) / len(selected_symbols)
         avg_percentage_changes.append(avg_percentage_change)
+    # Define the Asia/Jakarta time zone
+    jakarta_tz = pytz.timezone('Asia/Jakarta')
+
+    # Get current time in Asia/Jakarta time zone
+    current_time = datetime.datetime.now(jakarta_tz)
 
     # Store the time of the data collection for display purposes
     st.session_state.time_series_data1.append({
-        'Time': datetime.datetime.now(),
+        'Time': current_time,
         'Average Percentage Change': avg_percentage_changes
     })
 
