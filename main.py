@@ -412,7 +412,6 @@ def plot_combined_percentage_chart(selected_symbols, title):
         mode='lines+markers+text',
         name='Average Change',
         line=dict(color='blue'),
-        text=["" for pct in df['Average Percentage Change']],
         textposition='top center'
     ))
 
