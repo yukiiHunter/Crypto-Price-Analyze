@@ -471,8 +471,8 @@ def plot_combined_percentage_chart_BAR(selected_symbols, title):
     if 'time_series_data1' not in st.session_state:
         st.session_state.time_series_data1 = []
 
-    intervals = ['1m', '5m', '15m', '30m', '1h']
-    interval_labels = ['1 min', '5 min', '15 min', '30 min', '1 hour']
+    intervals = ['1m', '5m', '15m', '30m', '1h', '4h', '8h', '1d', '1w', '1M']
+    interval_labels = ['1 min', '5 min', '15 min', '30 min', '1 hour', '4 hour', '8 hour', '1 day', '1 weak', '1 month']
     avg_percentage_changes = []
 
     for interval in intervals:
